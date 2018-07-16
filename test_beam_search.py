@@ -53,12 +53,14 @@ if torch.cuda.device_count() > 1:
     imitate_net = torch.nn.DataParallel(imitate_net, dim=0)
     imitate_net.load_state_dict(torch.load(config.pretrain_modelpath))
 else:
-    weights = torch.load(config.pretrain_modelpath)
-    new_weights = {}
-    for k in weights.keys():
-        if k.startswith("module"):
-            new_weights[k[7:]] = weights[k]
-    imitate_net.load_state_dict(new_weights)
+    #weights = torch.load(config.pretrain_modelpath)
+    #new_weights = {}
+    #for k in weights.keys():
+    #    if k.startswith("module"):
+    #        new_weights[k[7:]] = weights[k]
+    #imitate_net.load_state_dict(new_weights)
+
+    imitate_net.load_state_dict(torch.load(config.pretrain_modelpath))
 
 imitate_net.cuda()
 
