@@ -14,6 +14,7 @@ def drawFunc():
     glFlush()
 
 def keyFunc(key, x, y):
+    global eye, up
     if (key == 'a') :
         eye = [1.0, 0, 0]
     #elif (key == 'r') :
@@ -27,6 +28,7 @@ def main():
     glutInitWindowSize(400,400)
     glutCreateWindow("ShowPic")
     glutDisplayFunc(drawFunc)
+    # glutIdleFunc(drawFunc)
     glutKeyboardFunc(keyFunc)
     glutMainLoop()
 
