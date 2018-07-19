@@ -6,6 +6,8 @@ from OpenGL.GLUT import *
 import numpy as np
 import time
 
+from glm import glm
+
 xaxis = 0.0
 yaxis = 0.0
 zaxis = 0.0
