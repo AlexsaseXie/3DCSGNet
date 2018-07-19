@@ -7,10 +7,14 @@ import numpy as np
 import time
 
 from glm import glm
+import transform
+
+eye = glm.vec3(0,0,5)
+up = glm.vec3(0,1,0)
 
 xaxis = 0.0
 yaxis = 0.0
-zaxis = 0.0
+zaxis = 1.0
 
 
 def cubes():
@@ -158,11 +162,11 @@ def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glClearColor(1.0,1.0,1.0,0.0)
     glLoadIdentity()
-    glTranslatef(0, 0, -5)
+    #glTranslatef(0, 0, -5)
     #glRotatef(xaxis, 1, 0, 0)
     #glRotatef(yaxis, 0, 1, 0)
     #glRotatef(zaxis, 0, 0, 1)
-    gluLookAt(xaxis,yaxis,zaxis,0,0,0,0,1,0)
+    gluLookAt(eye.x, eye.y, eye.z ,0,0,0, up.x, up.y, up.z)
     cubes()
     #xaxis = xaxis + 1
     #yaxis = yaxis + 1
@@ -197,15 +201,27 @@ def init(width, height):
 
 def keyboard(key, w, h):
     global xaxis,yaxis,zaxis
-    if (key==b'x' or key == b'X'):
-        print('x Pressed')
-        xaxis = xaxis + 10
-    if (key==b'y' or key == b'Y'):
-        print('y Pressed')
-        yaxis = yaxis + 10
-    if (key==b'z' or key == b'Z'):
-        print('z Pressed')
-        zaxis = zaxis + 10
+    global eye, up
+    if (key==b'a' or key == b'A'):
+        print('a Pressed')
+        eye,up = transform.left(5.0, eye, up)
+    if (key==b'd' or key == b'D'):
+        print('d Pressed')
+        eye,up = transform.left(-5.0, eye, up)
+    if (key==b'w' or key == b'W'):
+        print('w Pressed')
+        eye,up = transform.up(5.0, eye, up)
+    if (key==b's' or key ==b'S'):
+        print('s Pressed')
+        eye,up = transform.up(-5.0, eye, up)
+
+
+    if (key==b'n' or key == b'N'):
+        print('Near')
+        eye,up = transform.near(0.5, eye, up)
+    if (key==b'm' or key == b'M'):
+        print('Further')
+        eye,up = transform.near(-0.5, eye, up)
 
     glutPostRedisplay()
 

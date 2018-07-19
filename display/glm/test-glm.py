@@ -42,5 +42,5 @@ for i in range(10):
 
     print(a)
 
-
-
+f = glm.mat3.identity()
+print(f)

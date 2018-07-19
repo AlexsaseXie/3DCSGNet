@@ -1,6 +1,6 @@
 import math
 
-class vec3 :
+class vec3:
     def __init__(self,x:float = 0,y:float = 0,z:float = 0):
         self.x = x
         self.y = y
@@ -109,10 +109,10 @@ class mat3:
         self.item[2][1] = h
         self.item[2][2] = i 
     
-    def identity(self):
+    def identity(self=None):
         return mat3(1,0,0,0,1,0,0,0,1)
     
-    def zeros(self):
+    def zeros(self=None):
         return mat3()
 
     def getv(self, index1, index2):
@@ -146,6 +146,38 @@ class mat3:
             temp[i] = v
         
         return temp
+
+    def scalarmul(self,b):
+        temp = mat3()
+
+        for i in range(3):
+            for j in range(3):
+                temp.setv(i,j,b * self.getv(i, j))
+
+        return temp
+
+    def matadd(self,b):
+        temp = mat3()
+
+        for i in range(3):
+            for j in range(3):
+                temp.setv(i, j, self.getv(i,j) + b.getv(i, j))
+
+        return temp
+
+    def __add__(self,b):
+        return self.matadd(b)
+
+    def __mul__(self,b):
+        if isinstance(b, mat3):
+            return self.matmul(b)
+        elif isinstance(b, vec3):
+            return self.vecmul(b)
+        else:
+            return self.scalarmul(b)
+
+    def __rmul__(self,b):
+        return self * b
 
     def __str__(self):
         temp = ''
@@ -184,10 +216,10 @@ class mat4:
         self.item[3][2] = o
         self.item[3][3] = p 
     
-    def identity(self):
+    def identity(self=None):
         return mat4(a=1,f=1,k=1,p=1)
     
-    def zeros(self):
+    def zeros(self=None):
         return mat4()
 
     def getv(self, index1, index2):
@@ -220,6 +252,24 @@ class mat4:
 
             temp[i] = v
         
+        return temp
+
+    def matadd(self,b):
+        temp = mat4()
+
+        for i in range(4):
+            for j in range(4):
+                temp.setv(i, j, self.getv(i,j) + b.getv(i, j))
+
+        return temp
+
+    def scalarmul(self,b):
+        temp = mat4()
+
+        for i in range(4):
+            for j in range(4):
+                temp.setv(i,j,b * self.getv(i, j))
+
         return temp
 
     def __str__(self):
