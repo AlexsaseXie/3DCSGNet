@@ -47,6 +47,23 @@ class vec3:
         temp[2] = self[0] * b[1] - self[1] * b[0]
         return temp 
 
+    def add(self, b):
+        temp = vec3(0,0,0)
+        temp[0] = self.x + b.x
+        temp[1] = self.y + b.y
+        temp[2] = self.z + b.z
+        return temp
+
+    def __add__(self, b):
+        return self.add(b)
+
+    def __sub__(self, b):
+        temp = vec3(0,0,0)
+        temp.x = - b.x
+        temp.y = - b.y
+        temp.z = - b.z
+        return self.add(temp)
+
 class vec4:
     def __init__(self,x:float = 0,y:float = 0,z:float = 0,w: float = 1):
         self.x = x

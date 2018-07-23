@@ -19,12 +19,16 @@ def rotate(degrees: float, axis):
 
     return R
 
-def left(degrees: float, eye, up):
+def left(degrees: float, eye, up, center):
+    eye = eye - center
     eye = rotate(degrees, up) * eye
+    eye = eye + center
 
     return eye, up
 
-def up(degrees: float, eye, up):
+def up(degrees: float, eye, up, center):
+    eye = eye - center
+
     x = up.cross(eye)
     x = x.normalize()
     
@@ -33,13 +37,15 @@ def up(degrees: float, eye, up):
     up = eye.cross(x)
     up = up.normalize()
 
+    eye = eye + center
     return eye, up
 
-def near(dis: float, eye, up):
-    length = math.sqrt(eye.x * eye.x + eye.y * eye.y + eye.z * eye.z)
+def near(dis: float, eye, up, center):
+    length = math.sqrt( (eye.x - center.x) * (eye.x - center.x) + (eye.y - center.y) * (eye.y - center.y) 
+        + (eye.z - center.z) * (eye.z - center.z) )
 
-    eye.x -= dis * eye.x / length
-    eye.y -= dis * eye.y / length
-    eye.z -= dis * eye.z / length
+    eye.x -= dis * (eye.x - center.x) / length
+    eye.y -= dis * (eye.y - center.y) / length
+    eye.z -= dis * (eye.z - center.z) / length
 
     return eye, up
