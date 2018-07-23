@@ -7,7 +7,7 @@ class vec3:
         self.z = z
     
     def __str__(self):
-        return 'x:' + str(self.x) + ', y:' + str(self.y) +', z:' + str(self.z)
+        return 'x:' + ('%.3f' % self.x) + ', y:' + ('%.3f' % self.y) +', z:' + ('%.3f' % self.z)
 
     def __getitem__(self,index):
         if (index == 0):

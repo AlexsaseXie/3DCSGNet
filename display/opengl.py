@@ -15,20 +15,37 @@ center = glm.vec3(32,32,32)
 
 
 current_index = 0
+is_target = False
 
-file_path = sys.argv[1]
-with open(file_path) as data_file:
+file_path = '../trained_models/results/model.pth'
+
+if (len(sys.argv) > 1):
+    file_path = sys.argv[1]
+with open(file_path + '/pred.txt') as data_file:
     expressions = data_file.readlines()
+with open(file_path + '/target.txt') as target_data_file:
+    target_expressions = target_data_file.readlines()
+
 
 import deepdish as dd
 sys.path.append('..')
 from src.Utils.train_utils import voxels_from_expressions
 
 # pre-rendered shape primitives in the form of voxels for better performance
-primitives = dd.io.load("data/primitives.h5")
+primitives = dd.io.load("../data/primitives.h5")
+img_points = []
+target_img_points = []
 
-expression = expressions[current_index]
-voxel = voxels_from_expressions([expression], primitives, max_len=7)
+#info text
+print('HELP TEXT:')
+print('\n ----------------------------- \n')
+print ('wasd : rotate the view point')
+print ('nm : drag the view point nearer or further')
+print ('r : reset eye and view direction')
+print ('t : toggle to view predicted model and target model')
+print ('Left and Right Key : view next model\'s voxel representation')
+print('\n ----------------------------- \n')
+
 
 def fake_data():
     a = np.zeros([64,64,64],dtype=bool)
@@ -83,148 +100,21 @@ def find_points(a):
     
     return l
 
-img,_ = fake_cube()
-img_points = find_points(img)
+def init_img():
+    global current_index, img_points, target_img_points
+    print('loading img...')
 
-print(len(img_points))
+    expression = expressions[current_index]
+    target_expression = target_expressions[current_index]
 
-def cubes():
-    glBegin(GL_QUADS)
-    glColor3f(0.3, 0.3, 0.0)
-    glVertex3f(0.3, 0.3, -0.3)
-    glColor3f(0.0, 0.3, 0.0)
-    glVertex3f(-0.3, 0.3, -0.3)
-    glColor3f(0.0, 0.3, 0.3)
-    glVertex3f(-0.3, 0.3, 0.3)
-    glColor3f(0.3, 0.3, 0.3)
-    glVertex3f(0.3, 0.3, 0.3)
+    voxel = voxels_from_expressions([expression, target_expression], primitives, max_len=7)
 
-    glColor3f(0.3, 0.3, 0.3)
-    glVertex3f(0.3, 0.3, 0.3)
-    glColor3f(0.0, 0.3, 0.3)
-    glVertex3f(-0.3, 0.3, 0.3)
-    glColor3f(0.0, 0.0, 0.3)
-    glVertex3f(-0.3, -0.3, 0.3)
-    glColor3f(0.3, 0.0, 0.3)
-    glVertex3f(0.3, -0.3, 0.3)
+    img_points = find_points(voxel[0])
+    target_img_points = find_points(voxel[1])
 
-    glColor3f(0.3, 0.0, 0.0)
-    glVertex3f(0.3, -0.3, -0.3)
-    glColor3f(0.0, 0.0, 0.0)
-    glVertex3f(-0.3, -0.3, -0.3)
-    glColor3f(0.0, 0.3, 0.0)
-    glVertex3f(-0.3, 0.3, -0.3)
-    glColor3f(0.3, 0.3, 0.0)
-    glVertex3f(0.3, 0.3, -0.3)
+    print('loading fish!')
 
-    glColor3f(0.0, 0.3, 0.3)
-    glVertex3f(-0.3, 0.3, 0.3)
-    glColor3f(0.0, 0.3, 0.0)
-    glVertex3f(-0.3, 0.3, -0.3)
-    glColor3f(0.0, 0.0, 0.0)
-    glVertex3f(-0.3, -0.3, -0.3)
-    glColor3f(0.0, 0.0, 0.3)
-    glVertex3f(-0.3, -0.3, 0.3)
-
-    glColor3f(0.3, 0.3, 0.0)
-    glVertex3f(0.3, 0.3, -0.3)
-    glColor3f(0.3, 0.3, 0.3)
-    glVertex3f(0.3, 0.3, 0.3)
-    glColor3f(0.3, 0.0, 0.3)
-    glVertex3f(0.3, -0.3, 0.3)
-    glColor3f(0.3, 0.0, 0.0)
-    glVertex3f(0.3, -0.3, -0.3)
-
-    glColor3f(0.5, 0.5, 0.0)
-    glVertex3f(0.5, 0.5, -0.5)
-    glColor3f(0.0, 0.5, 0.0)
-    glVertex3f(-0.5, 0.5, -0.5)
-    glColor3f(0.0, 0.5, 0.5)
-    glVertex3f(-0.5, 0.5, 0.5)
-    glColor3f(0.5, 0.5, 0.5)
-    glVertex3f(0.5, 0.5, 0.5)
-
-    glColor3f(0.5, 0.5, 0.5)
-    glVertex3f(0.5, 0.5, 0.5)
-    glColor3f(0.0, 0.5, 0.5)
-    glVertex3f(-0.5, 0.5, 0.5)
-    glColor3f(0.0, 0.0, 0.5)
-    glVertex3f(-0.5, -0.5, 0.5)
-    glColor3f(0.5, 0.0, 0.5)
-    glVertex3f(0.5, -0.5, 0.5)
-
-    glColor3f(0.5, 0.0, 0.0)
-    glVertex3f(0.5, -0.5, -0.5)
-    glColor3f(0.0, 0.0, 0.0)
-    glVertex3f(-0.5, -0.5, -0.5)
-    glColor3f(0.0, 0.5, 0.0)
-    glVertex3f(-0.5, 0.5, -0.5)
-    glColor3f(0.5, 0.5, 0.0)
-    glVertex3f(0.5, 0.5, -0.5)
-
-    glColor3f(0.0, 0.5, 0.5)
-    glVertex3f(-0.5, 0.5, 0.5)
-    glColor3f(0.0, 0.5, 0.0)
-    glVertex3f(-0.5, 0.5, -0.5)
-    glColor3f(0.0, 0.0, 0.0)
-    glVertex3f(-0.5, -0.5, -0.5)
-    glColor3f(0.0, 0.0, 0.5)
-    glVertex3f(-0.5, -0.5, 0.5)
-
-    glColor3f(0.5, 0.5, 0.0)
-    glVertex3f(0.5, 0.5, -0.5)
-    glColor3f(0.5, 0.5, 0.5)
-    glVertex3f(0.5, 0.5, 0.5)
-    glColor3f(0.5, 0.0, 0.5)
-    glVertex3f(0.5, -0.5, 0.5)
-    glColor3f(0.5, 0.0, 0.0)
-    glVertex3f(0.5, -0.5, -0.5)
-
-    glColor3f(1.0, 1.0, 0.0)
-    glVertex3f(1.0, 1.0, -1.0)
-    glColor3f(0.0, 1.0, 0.0)
-    glVertex3f(-1.0, 1.0, -1.0)
-    glColor3f(0.0, 1.0, 1.0)
-    glVertex3f(-1.0, 1.0, 1.0)
-    glColor3f(1.0, 1.0, 1.0)
-    glVertex3f(1.0, 1.0, 1.0)
-
-    glColor3f(1.0, 1.0, 1.0)
-    glVertex3f(1.0, 1.0, 1.0)
-    glColor3f(0.0, 1.0, 1.0)
-    glVertex3f(-1.0, 1.0, 1.0)
-    glColor3f(0.0, 0.0, 1.0)
-    glVertex3f(-1.0, -1.0, 1.0)
-    glColor3f(1.0, 0.0, 1.0)
-    glVertex3f(1.0, -1.0, 1.0)
-
-    glColor3f(1.0, 0.0, 0.0)
-    glVertex3f(1.0, -1.0, -1.0)
-    glColor3f(0.0, 0.0, 0.0)
-    glVertex3f(-1.0, -1.0, -1.0)
-    glColor3f(0.0, 1.0, 0.0)
-    glVertex3f(-1.0, 1.0, -1.0)
-    glColor3f(1.0, 1.0, 0.0)
-    glVertex3f(1.0, 1.0, -1.0)
-
-    glColor3f(0.0, 1.0, 1.0)
-    glVertex3f(-1.0, 1.0, 1.0)
-    glColor3f(0.0, 1.0, 0.0)
-    glVertex3f(-1.0, 1.0, -1.0)
-    glColor3f(0.0, 0.0, 0.0)
-    glVertex3f(-1.0, -1.0, -1.0)
-    glColor3f(0.0, 0.0, 1.0)
-    glVertex3f(-1.0, -1.0, 1.0)
-
-    glColor3f(1.0, 1.0, 0.0)
-    glVertex3f(1.0, 1.0, -1.0)
-    glColor3f(1.0, 1.0, 1.0)
-    glVertex3f(1.0, 1.0, 1.0)
-    glColor3f(1.0, 0.0, 1.0)
-    glVertex3f(1.0, -1.0, 1.0)
-    glColor3f(1.0, 0.0, 0.0)
-    glVertex3f(1.0, -1.0, -1.0)
-    glEnd()
+init_img()
 
 def single_plane(a,b,c,d):
     glBegin(GL_QUADS)
@@ -244,63 +134,135 @@ def single_cube(center, l):
     glBegin(GL_QUADS)
 
     #front
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:
+        glColor3f(0.0, 0.3, 0.3)
+    else:
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:
+        glColor3f(0.0, 0.3, 0.3)
+    else:
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
 
     #right
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
 
     #back
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
 
     #left
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
 
     #up 
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
 
     #down 
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
-    glColor3f(0.3, 0.3, 0.0)
+    if not is_target:
+        glColor3f(0.3, 0.3, 0.0)
+    else:
+        glColor3f(1.0, 0.0, 1.0)
     glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
-    glColor3f(0.0, 0.3, 0.3)
+    if not is_target:         
+        glColor3f(0.0, 0.3, 0.3)     
+    else:         
+        glColor3f(1.0, 1.0, 0.0)
     glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
 
     glEnd()
@@ -309,20 +271,20 @@ def display():
     global xaxis,yaxis,zaxis
     time.sleep(0.1)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glClearColor(1.0,1.0,1.0,0.0)
+    glClearColor(1.0, 1.0, 1.0, 0.0)
     glLoadIdentity()
-    #glTranslatef(0, 0, -5)
-    #glRotatef(xaxis, 1, 0, 0)
-    #glRotatef(yaxis, 0, 1, 0)
-    #glRotatef(zaxis, 0, 0, 1)
+
     gluLookAt(eye.x, eye.y, eye.z , center.x , center.y , center.z, up.x, up.y, up.z)
     #cubes()
 
-    for p in img_points:
-        single_cube(p,1)
+    if not is_target:
+        for p in img_points:
+            single_cube(p,1)
+    else:
+        for p in target_img_points:
+            single_cube(p,1)
     
     glutSwapBuffers()
-
 
 def reshape(w, h):
     if (h == 0):
@@ -333,13 +295,21 @@ def reshape(w, h):
     gluPerspective(45.0,w /h, 0.1, 100.0)
     glMatrixMode(GL_MODELVIEW)
 
-
 def init(width, height):
     if (height == 0):
         height = 1
-    glClearColor(0.0, 0.0, 0.0, 0.0)
+    glClearColor(1.0, 1.0, 1.0, 0.0)
     glClearDepth(1.0)
     glDepthFunc(GL_LESS)
+
+    #glLightfv(GL_LIGHT0, GL_POSITION, 1.0, 1.0, 1.0, 0.0)
+    #glLightfv(GL_LIGHT0, GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0)
+    #glLightfv(GL_LIGHT0, GL_SPECULAR, 1.0, 1.0, 1.0, 1.0)
+    #glLightModelfv(GL_LIGHT_MODEL_AMBIENT, 0.2, 0.2, 0.2, 1.0)
+
+    #glEnable(GL_LIGHTING)
+    #glEnable(GL_LIGHT0)
+
     glEnable(GL_DEPTH_TEST)
     glShadeModel(GL_SMOOTH)
 
@@ -348,43 +318,94 @@ def init(width, height):
     gluPerspective(45.0,width /height, 1, 100.0)
     glMatrixMode(GL_MODELVIEW)
 
-
 def keyboard(key, w, h):
-    global xaxis,yaxis,zaxis
-    global eye, up
+    global eye, up, center, is_target
     if (key==b'a' or key == b'A'):
-        print('a Pressed')
         eye,up = transform.left(5.0, eye, up, center)
     if (key==b'd' or key == b'D'):
-        print('d Pressed')
         eye,up = transform.left(-5.0, eye, up, center)
     if (key==b'w' or key == b'W'):
-        print('w Pressed')
         eye,up = transform.up(5.0, eye, up, center)
     if (key==b's' or key ==b'S'):
-        print('s Pressed')
         eye,up = transform.up(-5.0, eye, up, center)
 
 
     if (key==b'n' or key == b'N'):
-        print('Near')
-        eye,up = transform.near(0.5, eye, up, center)
+        eye,up = transform.near(2, eye, up, center)
     if (key==b'm' or key == b'M'):
-        print('Further')
-        eye,up = transform.near(-0.5, eye, up, center)
+        eye,up = transform.near(-2, eye, up, center)
 
+
+    if (key==b'r' or key == b'R'):
+        reset()
+    if (key==b't' or key == b'T'):
+        is_target = ~is_target
+    
+
+    showParameters()
     glutPostRedisplay()
 
-print ('wasd : rotate the view point')
-print ('nm : drag the view point nearer or further')
+def specialKeyboard(key, w, h):
+    global current_index, expressions
+    if (key == GLUT_KEY_LEFT):
+        sys.stdout.write('\n')
+        print('Left pressed')
+        current_index -= 1
+        current_index = current_index % len(expressions)
+        init_img()
+
+        reset()
+
+    if (key == GLUT_KEY_RIGHT):
+        sys.stdout.write('\n')
+        print('Right pressed')
+        current_index += 1
+        current_index = current_index % len(expressions)
+        init_img()
+
+        reset()
+    
+    showParameters()
+    glutPostRedisplay()
+
+def reset():
+    global eye, up, center, is_target
+
+    eye.x = 0
+    eye.y = 0 
+    eye.z = 0
+
+    up.x = 0
+    up.y = 1
+    up.z = 0
+
+    center.x = 32
+    center.y = 32
+    center.z = 32
+
+    is_target = False
+
+previous_len = 0
+def showParameters():
+    global previous_len
+
+    sys.stdout.write(' ' * (previous_len + 1) + '\r')
+    sys.stdout.flush()
+    output_str = 'pic '+ str(current_index) +' | eye:' + str(eye) + '; center:' + str(center) + '; up:' + str(up) + '\r'
+    sys.stdout.write(output_str)
+    sys.stdout.flush()
+
+    previous_len = len(output_str)
+    
 glutInit()
 glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
 glutInitWindowPosition(400, 100)
 glutInitWindowSize(640, 480)
-glutCreateWindow("HiddenStrawberry")
+glutCreateWindow("CSG test result viewer")
 glutDisplayFunc(display)
 #glutIdleFunc(display)
 glutReshapeFunc(reshape)
 glutKeyboardFunc(keyboard)
+glutSpecialFunc(specialKeyboard)
 init(640, 480)
 glutMainLoop()
