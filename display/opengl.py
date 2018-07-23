@@ -13,6 +13,7 @@ eye = glm.vec3(0,0,0)
 up = glm.vec3(0,1,0)
 center = glm.vec3(32,32,32)
 
+import random
 
 current_index = 0
 is_target = False
@@ -45,28 +46,6 @@ print ('r : reset eye and view direction')
 print ('t : toggle to view predicted model and target model')
 print ('Left and Right Key : view next model\'s voxel representation')
 print('\n ----------------------------- \n')
-
-
-def fake_data():
-    a = np.zeros([64,64,64],dtype=bool)
-
-    l = []
-    for i in range(100):
-        temp = np.random.randint(0,64,size=3)
-        l.append(temp)
-        a[temp[0],temp[1],temp[2]] = True
-    return a, l
-
-def fake_cube():
-    a = np.zeros([64,64,64],dtype=bool)
-
-    l = []
-    for i in range(22,43):
-        for j in range(22,43):
-            for k in range(22,43):
-                a[i,j,k] = True
-
-    return a,l
 
 def find_points(a):
     l = []
@@ -102,7 +81,7 @@ def find_points(a):
 
 def init_img():
     global current_index, img_points, target_img_points
-    print('loading img...')
+    print('loading models...')
 
     expression = expressions[current_index]
     target_expression = target_expressions[current_index]
@@ -292,7 +271,7 @@ def reshape(w, h):
     glViewport(0, 0, w,h)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45.0,w /h, 0.1, 100.0)
+    gluPerspective(45.0,w /h, 0.1, 500.0)
     glMatrixMode(GL_MODELVIEW)
 
 def init(width, height):
@@ -315,8 +294,11 @@ def init(width, height):
 
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45.0,width /height, 1, 100.0)
+    gluPerspective(45.0,width /height, 1, 500.0)
     glMatrixMode(GL_MODELVIEW)
+
+    printExpression()
+    showParameters()
 
 def keyboard(key, w, h):
     global eye, up, center, is_target
@@ -355,6 +337,7 @@ def specialKeyboard(key, w, h):
         init_img()
 
         reset()
+        printExpression()
 
     if (key == GLUT_KEY_RIGHT):
         sys.stdout.write('\n')
@@ -364,7 +347,17 @@ def specialKeyboard(key, w, h):
         init_img()
 
         reset()
+        printExpression()
     
+    if (key == GLUT_KEY_DOWN):
+        sys.stdout.write('\n')
+        print('Random Model')
+        current_index = random.randint(0, len(target_expressions) - 1)
+        init_img()
+
+        reset()
+        printExpression()
+
     showParameters()
     glutPostRedisplay()
 
@@ -384,6 +377,11 @@ def reset():
     center.z = 32
 
     is_target = False
+
+def printExpression():
+    print('case ' + str(current_index) + ':')
+    print('predict: ' + expressions[current_index] )
+    print('target: ' + target_expressions[current_index])
 
 previous_len = 0
 def showParameters():
