@@ -93,8 +93,6 @@ def init_img():
 
     print('loading fish!')
 
-init_img()
-
 def single_plane(a,b,c,d):
     glBegin(GL_QUADS)
 
@@ -297,6 +295,7 @@ def init(width, height):
     gluPerspective(45.0,width /height, 1, 500.0)
     glMatrixMode(GL_MODELVIEW)
 
+    init_img()
     printExpression()
     showParameters()
 
