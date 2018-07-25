@@ -18,7 +18,7 @@ import random
 current_index = 0
 is_target = False
 
-file_path = '../trained_models/results/model.pth'
+file_path = '../trained_models/results/given-model.pth'
 
 if (len(sys.argv) > 1):
     file_path = sys.argv[1]
