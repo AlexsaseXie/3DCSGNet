@@ -6,9 +6,9 @@ from display.glm import glm
 from src.Generator.generator import *
 from src.Generator.stack import *
 
-data_label_paths = {3: "data/one_op/expressions.txt",
-            5: "../data/two_ops/expressions.txt",
-            7: "../data/three_ops/expressions.txt"}
+data_label_paths = {3: "data/one_op/expressions.txt" }
+            #5: "/data/two_ops/expressions.txt",
+            #7: "/data/three_ops/expressions.txt"}
 
 gen = Generator(data_labels_paths=data_label_paths, primitives=None)
 
