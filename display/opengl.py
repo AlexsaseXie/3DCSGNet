@@ -53,30 +53,13 @@ def find_points(a):
         for j in range(64):
             for k in range(64):
                 if a[i,j,k]== True:
-                    l.append([i,j,k])
-
-
-    # remove inner points , only keep surface points(cubes)
-    remove_list = []
-    for index, point in enumerate(l):
-        if not [point[0]-1,point[1],point[2]] in l:
-            continue
-        if not [point[0]+1,point[1],point[2]] in l:
-            continue
-        if not [point[0],point[1]-1,point[2]] in l:
-            continue
-        if not [point[0],point[1]+1,point[2]] in l:
-            continue
-        if not [point[0],point[1],point[2]-1] in l:
-            continue
-        if not [point[0],point[1],point[2]+1] in l:
-            continue
-
-        remove_list.append(index)
-
-    for index,i in enumerate(remove_list):
-        del l[ i-index ]
-    
+                    # remove inner points , only keep surface points(cubes)
+                    if (i > 0 and a[i-1,j,k] == True) and (i < 63 and a[i+1,j,k] == True) \
+                        and (j > 0 and a[i,j-1,k] == True) and (j < 63 and a[i,j+1,k] == True) \
+                        and (k > 0 and a[i,j,k-1] == True) and (k < 63 and a[i,j,k+1] == True):
+                        continue
+                    else:
+                        l.append([i,j,k])
     return l
 
 def init_img():
