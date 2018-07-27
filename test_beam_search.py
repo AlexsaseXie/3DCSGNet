@@ -23,9 +23,9 @@ print(config.config)
 data_labels_paths = {3: "data/one_op/expressions.txt",
                      5: "data/two_ops/expressions.txt",
                      7: "data/three_ops/expressions.txt"}
-dataset_sizes = {3: [110000, 20000],
-                 5: [220000, 40000],
-                 7: [440000, 80000]}
+dataset_sizes = {3: [110000, 1000],
+                 5: [220000, 2000],
+                 7: [440000, 4000]}
 
 test_gen_objs = {}
 types_prog = len(dataset_sizes.keys())
@@ -90,6 +90,7 @@ Rs = 0
 t1 = time.time()
 IOU = {}
 total_iou = 0
+print('begin testing')
 for k in data_labels_paths.keys():
     Rs = 0.0
     for batch_idx in range(dataset_sizes[k][1] // config.batch_size):
@@ -146,9 +147,11 @@ for k in data_labels_paths.keys():
 
             # find the index of the best expression
             max_index = np.where(beam_R [r * beam_width: (r + 1) * beam_width] == R[r])
-            Predicted_expressions += expressions[ max_index[0][0] ]
+            Predicted_expressions.append(expressions[max_index[0][0] + r * beam_width])
 
         Rs += np.sum(R)
+        
+        print('batch' + str(batch_idx))
     total_iou += Rs
     IOU[k] = Rs / ((dataset_sizes[k][1] // config.batch_size) * config.batch_size)
     print("IOU for {} len program: ".format(k), IOU[k])
