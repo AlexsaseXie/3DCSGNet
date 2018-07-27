@@ -6,19 +6,21 @@ from OpenGL.GLUT import *
 import numpy as np
 import time
 
-from glm import glm
-import transform
+from src.display.glm import glm
+from src.display import transform
+from src.projection.find_points import *
+
+import random
 
 eye = glm.vec3(0,0,0)
 up = glm.vec3(0,1,0)
 center = glm.vec3(32,32,32)
 
-import random
 
 current_index = 0
 is_target = False
 
-file_path = '../trained_models/results/given-model.pth'
+file_path = 'trained_models/results/given-model.pth'
 
 if (len(sys.argv) > 1):
     file_path = sys.argv[1]
@@ -29,11 +31,11 @@ with open(file_path + '/target.txt') as target_data_file:
 
 
 import deepdish as dd
-sys.path.append('..')
 from src.Utils.train_utils import voxels_from_expressions
 
+
 # pre-rendered shape primitives in the form of voxels for better performance
-primitives = dd.io.load("../data/primitives.h5")
+primitives = dd.io.load("data/primitives.h5")
 img_points = []
 target_img_points = []
 
@@ -47,20 +49,7 @@ print ('t : toggle to view predicted model and target model')
 print ('Left and Right Key : view next model\'s voxel representation')
 print('\n ----------------------------- \n')
 
-def find_points(a):
-    l = []
-    for i in range(64):
-        for j in range(64):
-            for k in range(64):
-                if a[i,j,k]== True:
-                    # remove inner points , only keep surface points(cubes)
-                    if (i > 0 and a[i-1,j,k] == True) and (i < 63 and a[i+1,j,k] == True) \
-                        and (j > 0 and a[i,j-1,k] == True) and (j < 63 and a[i,j+1,k] == True) \
-                        and (k > 0 and a[i,j,k-1] == True) and (k < 63 and a[i,j,k+1] == True):
-                        continue
-                    else:
-                        l.append([i,j,k])
-    return l
+
 
 def init_img():
     global current_index, img_points, target_img_points
@@ -71,8 +60,8 @@ def init_img():
 
     voxel = voxels_from_expressions([expression, target_expression], primitives, max_len=7)
 
-    img_points = find_points(voxel[0])
-    target_img_points = find_points(voxel[1])
+    img_points = border_find_points(voxel[0])
+    target_img_points = border_find_points(voxel[1])
 
     print('loading fish!')
 

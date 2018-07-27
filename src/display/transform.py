@@ -1,4 +1,4 @@
-from glm import glm
+from src.display.glm import glm
 import math
 
 
