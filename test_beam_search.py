@@ -121,7 +121,7 @@ for k in data_labels_paths.keys():
         for index, prog in enumerate(expressions):
             expressions[index] = prog.split("$")[0]
 
-        Predicted_expressions += expressions
+        #Predicted_expressions += expressions
         target_expressions = parser.labels2exps(labels, k)
         Target_expressions += target_expressions
 
@@ -143,6 +143,11 @@ for k in data_labels_paths.keys():
         R = np.zeros(config.batch_size)
         for r in range(config.batch_size):
             R[r] = np.max(beam_R[r * beam_width: (r + 1) * beam_width])
+
+            # find the index of the best expression
+            max_index = np.where(beam_R [r * beam_width: (r + 1) * beam_width] == R[r])
+            Predicted_expressions += expressions[ max_index[0][0] ]
+
         Rs += np.sum(R)
     total_iou += Rs
     IOU[k] = Rs / ((dataset_sizes[k][1] // config.batch_size) * config.batch_size)
@@ -160,7 +165,7 @@ with open(results_path + "beam_{}_pred.txt".format(beam_width), "w") as file:
     for p in Predicted_expressions:
         file.write(p + "\n")
 
-with open(results_path + "beam_target.txt".format(beam_width), "w") as file:
+with open(results_path + "beam_{}_target.txt".format(beam_width), "w") as file:
     for p in Target_expressions:
         file.write(p + "\n")
 
