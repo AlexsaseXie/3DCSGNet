@@ -131,6 +131,8 @@ for epoch in range(0, config.epochs):
         for _ in range(num_accums):
             for k in data_labels_paths.keys():
                 data, labels = next(train_gen_objs[k])
+                
+                print(data.shape)
 
                 data = data[:, :, 0:config.top_k + 1, :, :]
                 one_hot_labels = prepare_input_op(labels, len(generator.unique_draw))

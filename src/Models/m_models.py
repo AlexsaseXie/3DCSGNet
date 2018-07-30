@@ -77,7 +77,7 @@ class M_CsgNet(nn.Module):
             self.b3,
             self.conv4,
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.MaxPool2d(kernel_size=(4, 4)),
             nn.Dropout(dropout),
             self.b4,
         )
