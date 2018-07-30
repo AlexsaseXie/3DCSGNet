@@ -44,15 +44,14 @@ def z_parrallel_projection(voxel, w , h ):
                 z -= 1
     return img
 
-
 # origin_w : x side of the view
 # origin_h : y side of the view
 def z_parrallel_projection_point(point_list, origin_w , origin_h , origin_z , w, h , center_x , center_y ):
     img = np.ones([w,h],dtype=float)
-    depth = np.zeros([w,h], dtype=float)
+    #depth = np.zeros([w,h], dtype=float)
 
-    point_index = [ [ [] for i in range(origin_h) ] for j in range(origin_w)  ] 
-    
+    point_zs = np.zeros([origin_w,origin_h], dtype=float) 
+
     # clean and then index the points 
     # may have negative index on p_x or p_y, but this doesn't matter. We refer to those elements by the same
     # negative index
@@ -64,13 +63,13 @@ def z_parrallel_projection_point(point_list, origin_w , origin_h , origin_z , w,
         p_x_ceiling = math.ceil(point[0])
         p_y_ceiling = math.ceil(point[1])
 
-        point_index[p_x][p_y].append(p_z)
+        point_zs[p_x,p_y] = max(point_zs[p_x,p_y], p_z)
         if (p_x_ceiling != p_x):
-            point_index[p_x_ceiling][p_y].append(p_z)
+            point_zs[p_x_ceiling,p_y] = max(point_zs[p_x_ceiling,p_y], p_z)
         if (p_y_ceiling != p_y):
-            point_index[p_x][p_y_ceiling].append(p_z)
+            point_zs[p_x,p_y_ceiling] = max(point_zs[p_x,p_y_ceiling], p_z)
         if (p_x_ceiling != p_x and p_y_ceiling != p_y):
-            point_index[p_x_ceiling][p_y_ceiling].append(p_z)
+            point_zs[p_x_ceiling,p_y_ceiling] = max(point_zs[p_x_ceiling,p_y_ceiling], p_z)
 
 
     w_ratio = origin_w / w
@@ -80,25 +79,24 @@ def z_parrallel_projection_point(point_list, origin_w , origin_h , origin_z , w,
     # (center_x, center_y) -> (w/2, h/2)
     for i in range(w):
         for j in range(h):
+            # candidate area
             x_min = math.floor(i - w/2 + 0.001) * w_ratio + center_x
             x_max = math.ceil(i - w/2 + 0.001) * w_ratio + center_x
             y_min = math.floor(j - h/2 + 0.001) * h_ratio + center_y
             y_max = math.ceil(j - h/2 + 0.001) * h_ratio + center_y
 
+            depth = 0
+
             x = math.ceil(x_min)
             while( x < x_max ):
                 y = math.ceil(y_min)
                 while( y < y_max ):
-                    points = point_index[x][y]
+                    point_z = point_zs[x,y]
 
-                    #if points != []:
-                    #    img[i][j] = 0
-
-                    for point_z in points:
-                        if point_z > depth[i][j] :
-                            depth[i][j] = point_z
+                    if point_z > depth:
+                        depth = point_z
                             
-                            img[i][j] = 1 - depth[i][j] * 1.0 / origin_z
+                        img[i][j] = 1 - depth * 1.0 / origin_z
                     
                     y = y + 1
 
