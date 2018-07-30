@@ -14,6 +14,8 @@ from src.Models.models import CsgNet, ParseModelOutput
 from src.Utils.learn_utils import LearningRate
 from src.Utils.train_utils import prepare_input_op, Callbacks
 
+import time
+
 if len(sys.argv) > 1:
     config = read_config.Config(sys.argv[1])
 else:
@@ -128,7 +130,12 @@ for epoch in range(0, config.epochs):
         loss_sum = Variable(torch.zeros(1)).cuda().data
         for _ in range(num_accums):
             for k in data_labels_paths.keys():
+                tick = time.time()
+
                 data, labels = next(train_gen_objs[k])
+
+                print('fetch data cost ' + str(time.time() - tick) + 'sec')
+                tick = time.time()
 
                 data = data[:, :, 0:config.top_k + 1, :, :, :]
                 one_hot_labels = prepare_input_op(labels, len(generator.unique_draw))
@@ -144,6 +151,8 @@ for epoch in range(0, config.epochs):
                        num_accums
                 loss.backward()
                 loss_sum += loss.data
+
+                print('train one batch cost' + str(time.time() - tick) + 'sec')
 
         # Clip the gradient to fixed value to stabilize training.
         torch.nn.utils.clip_grad_norm(imitate_net.parameters(), 20)

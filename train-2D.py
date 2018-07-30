@@ -136,8 +136,7 @@ for epoch in range(0, config.epochs):
                 
                 data, labels = next(train_gen_objs[k])
                 
-                print('fetch data cost ' + str(time.time() - tick) + 'msec')
-
+                print('fetch data cost ' + str(time.time() - tick) + 'sec')
                 tick = time.time()
 
                 data = data[:, :, 0:config.top_k + 1, :, :]
@@ -155,7 +154,7 @@ for epoch in range(0, config.epochs):
                 loss.backward()
                 loss_sum += loss.data
 
-                print('train one batch cost' + str(time.time() - tick) + 'msec')
+                print('train one batch cost' + str(time.time() - tick) + 'sec')
 
         # Clip the gradient to fixed value to stabilize training.
         torch.nn.utils.clip_grad_norm(imitate_net.parameters(), 20)
