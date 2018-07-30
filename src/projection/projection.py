@@ -47,9 +47,9 @@ def z_parrallel_projection(voxel, w , h ):
 
 # origin_w : x side of the view
 # origin_h : y side of the view
-def z_parrallel_projection_point(point_list, origin_w , origin_h , w, h , center_x , center_y ):
+def z_parrallel_projection_point(point_list, origin_w , origin_h , origin_z , w, h , center_x , center_y ):
     img = np.ones([w,h],dtype=float)
-    #depth = np.zeros([w,h], dtype=float)
+    depth = np.zeros([w,h], dtype=float)
 
     point_index = [ [ [] for i in range(origin_h) ] for j in range(origin_w)  ] 
     
@@ -91,16 +91,14 @@ def z_parrallel_projection_point(point_list, origin_w , origin_h , w, h , center
                 while( y < y_max ):
                     points = point_index[x][y]
 
-                    if points != []:
-                        img[i][j] = 0
+                    #if points != []:
+                    #    img[i][j] = 0
 
-                    #for point_z in points:
-                        # if point_z >= depth[i][j] :
-                        #     if (point_z > depth[i][j]):
-                        #         img[i][j] = 1
-                        #         depth[i][j] = point_z
+                    for point_z in points:
+                        if point_z > depth[i][j] :
+                            depth[i][j] = point_z
                             
-                        #     img[i][j] = max( 0, img[i][j] - 1.0 / len(xs) * len(ys) )
+                            img[i][j] = 1 - depth[i][j] * 1.0 / origin_z
                     
                     y = y + 1
 

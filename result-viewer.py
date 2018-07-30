@@ -24,9 +24,9 @@ file_path = 'trained_models/results/given-model.pth'
 
 if (len(sys.argv) > 1):
     file_path = sys.argv[1]
-with open(file_path + '/pred.txt') as data_file:
+with open(file_path + '/beam_10_pred.txt') as data_file:
     expressions = data_file.readlines()
-with open(file_path + '/target.txt') as target_data_file:
+with open(file_path + '/beam_10_target.txt') as target_data_file:
     target_expressions = target_data_file.readlines()
 
 

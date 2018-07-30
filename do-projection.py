@@ -42,12 +42,12 @@ for program_length in data_label_paths:
 
         #projection 
         #img = z_parrallel_projection(voxel, 32 , 32)
-        img = z_parrallel_projection_point(point_list,origin_w=128,origin_h=128, w=128, h=128, center_x=center[0], center_y=center[1])
+        img = z_parrallel_projection_point(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
 
-        # img_mask = img * 255
-        # img_mask = np.array(img_mask,dtype=int)
+        #img_mask = img * 255
+        #img_mask = np.array(img_mask,dtype=int)
         
-        # cv2.imwrite('data/2D/' + str(program_length) + '/' + str(index) +'.jpg' , img_mask)
+        #cv2.imwrite('data/2D-depth/' + str(program_length) + '/' + str(index) +'.jpg' , img_mask)
             
         print('finish processing pic '+str(index))
 
