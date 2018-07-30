@@ -33,7 +33,7 @@ for program_length in data_label_paths:
         program = gen.parse(exp)
 
         sim.generate_stack(program, if_primitives=True)
-        voxel = sim.stack.get_items()[0]
+        voxel = sim.stack.items[0]
 
         #point_list = border_find_points(voxel)
         #center = glm.vec3(32,32,32)
