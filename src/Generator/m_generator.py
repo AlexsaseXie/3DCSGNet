@@ -198,7 +198,7 @@ class M_Generator:
                             point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
 
                             #projection 
-                            img = z_parrallel_projection_point(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
+                            img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
 
                             stack.append([img])
                         
@@ -315,7 +315,7 @@ class M_Generator:
                             point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
 
                             #projection 
-                            img = z_parrallel_projection_point(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
+                            img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
 
                             stack.append([img])
                         

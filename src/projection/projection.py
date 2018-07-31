@@ -3,6 +3,8 @@ import numpy as np
 from src.display.glm import glm
 from src.projection.find_points import border_find_points
 
+import time
+
 # see from the top toward -z axis
 def z_parrallel_projection(voxel, w , h ):
     img = np.ones([w,h],dtype=float)
@@ -46,11 +48,13 @@ def z_parrallel_projection(voxel, w , h ):
 
 # origin_w : x side of the view
 # origin_h : y side of the view
-def z_parrallel_projection_point(point_list, origin_w , origin_h , origin_z , w, h , center_x , center_y ):
+def z_parrallel_projection_point(point_list, center_x , center_y , origin_w=128, origin_h=128 , origin_z=128 , w=128, h=128 ):
     img = np.ones([w,h],dtype=float)
-    #depth = np.zeros([w,h], dtype=float)
+    depth = np.zeros([w,h], dtype=float)
 
     point_zs = np.zeros([origin_w,origin_h], dtype=float) 
+
+    tick = time.time()
 
     # clean and then index the points 
     # may have negative index on p_x or p_y, but this doesn't matter. We refer to those elements by the same
@@ -70,6 +74,9 @@ def z_parrallel_projection_point(point_list, origin_w , origin_h , origin_z , w,
             point_zs[p_x,p_y_ceiling] = max(point_zs[p_x,p_y_ceiling], p_z)
         if (p_x_ceiling != p_x and p_y_ceiling != p_y):
             point_zs[p_x_ceiling,p_y_ceiling] = max(point_zs[p_x_ceiling,p_y_ceiling], p_z)
+
+    print('summarize point_list cost:' + str(time.time()-tick) + 'sec')
+    tick = time.time()
 
 
     w_ratio = origin_w / w
@@ -102,6 +109,51 @@ def z_parrallel_projection_point(point_list, origin_w , origin_h , origin_z , w,
 
                 x = x + 1
 
+    print('Do w*h projection cost:' + str(time.time() - tick) + 'sec')
+
+    return img
+
+# origin_w : x side of the view
+# origin_h : y side of the view
+def z_parrallel_projection_point_simple(point_list, center_x , center_y , origin_w=128, origin_h=128 , origin_z=128 , w=128, h=128 ):
+    # tick = time.time()
+    img = np.ones([w,h],dtype=float)
+    depth = np.zeros([w,h], dtype=float)
+
+    w_ratio = origin_w / w
+    h_ratio = origin_h / h
+
+
+
+    # clean and then index the points 
+    # may have negative index on p_x or p_y, but this doesn't matter. We refer to those elements by the same
+    # negative index
+    for point in point_list:
+        p_x = point[0]
+        p_y = point[1]
+        p_z = point[2]
+
+        # candidate area
+        x_min = math.floor(p_x - center_x + 0.001) / w_ratio + w/2
+        x_max = math.ceil(p_x - center_x + 0.001) / w_ratio + w/2
+        y_min = math.floor(p_y - center_y + 0.001) / h_ratio + h/2
+        y_max = math.ceil(p_y - center_y + 0.001) / h_ratio + h/2
+
+        x = math.ceil(x_min)
+        while( x <= x_max ):
+            y = math.ceil(y_min)
+            while( y <= y_max ):
+                if p_z > depth[x,y]:
+                    depth[x][y] = p_z
+                        
+                    img[x][y] = 1 - depth[x][y] * 1.0 / origin_z
+                
+                y = y + 1
+
+            x = x + 1
+
+
+    # print('summarize point_list cost:' + str(time.time()-tick) + 'sec')
     return img
 
 
