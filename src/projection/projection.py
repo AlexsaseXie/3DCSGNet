@@ -200,20 +200,20 @@ def axis_view_matrix(axis: glm.vec3):
 # see from the transfered top toward -z' axis
 # axis : the new z axis under the previous coordinate
 def axis_view_place_points(voxel ,transfer_matrix):
-    tick = time.time()
+    #tick = time.time()
 
     point_list = border_find_points_simple(voxel)
 
-    print(point_list.shape)
-    print('find points cost:' + str(time.time()-tick) + ' sec')
+    #print(point_list.shape)
+    #print('find points cost:' + str(time.time()-tick) + ' sec')
 
-    tick = time.time()
+    #tick = time.time()
 
     new_point_list = []
     for point in point_list:
         # new_point_list.append(transfer_matrix * point)
         new_point_list.append(np.dot(transfer_matrix,point))
 
-    print('multiply cost:' + str(time.time()-tick) + ' sec')
+    #print('multiply cost:' + str(time.time()-tick) + ' sec')
 
     return new_point_list

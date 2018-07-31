@@ -226,7 +226,7 @@ for epoch in range(0, config.epochs):
     #if test_reward > prev_test_reward:
     torch.save(imitate_net.state_dict(),
                 "trained_models/{}.pth".format(model_name))
-    prev_test_reward = test_reward
+    #prev_test_reward = test_reward
 
 
     callback.dump_all()

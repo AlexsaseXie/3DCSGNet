@@ -39,8 +39,6 @@ def border_find_points(a):
     return l
 
 def border_find_points_simple(a):
-    l = []
-
     zero_i = np.zeros([1,64,64] , dtype=bool)
     ai_minus_1 =  np.concatenate((zero_i,a[:-1,:,:]), axis = 0)
     ai_plus_1 = np.concatenate((a[1:,:,:] , zero_i), axis = 0)
