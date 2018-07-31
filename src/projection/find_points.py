@@ -63,7 +63,7 @@ def border_find_points_simple(a):
 
     indexl = np.argwhere(a_trim == True)
 
-    for i in indexl:
-        l.append(glm.vec3(i[0],i[1],i[2]))
+    #for i in indexl:
+    #    l.append(glm.vec3(i[0],i[1],i[2]))
 
-    return l
+    return indexl

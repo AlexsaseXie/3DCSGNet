@@ -147,7 +147,7 @@ class M_Generator:
 
         axis = glm.vec3(1,1,1)
         transfer_matrix = axis_view_matrix(axis=axis)
-        center = transfer_matrix * glm.vec3(32,32,32)
+        center = np.dot( transfer_matrix,np.array([32,32,32],dtype=float) )
 
         # if final_canvas:
         #     # We will load all the final canvases from the disk.
@@ -260,7 +260,7 @@ class M_Generator:
 
         axis = glm.vec3(1,1,1)
         transfer_matrix = axis_view_matrix(axis=axis)
-        center = transfer_matrix * glm.vec3(32,32,32)
+        center = np.dot( transfer_matrix,np.array([32,32,32],dtype=float) )
 
         # if final_canvas:
         #     # We will load all the final canvases from the disk.

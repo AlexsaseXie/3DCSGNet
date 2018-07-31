@@ -139,19 +139,43 @@ def z_parrallel_projection_point_simple(point_list, center_x , center_y , origin
         y_min = math.floor(p_y - center_y + 0.001) / h_ratio + h/2
         y_max = math.ceil(p_y - center_y + 0.001) / h_ratio + h/2
 
-        x = math.ceil(x_min)
-        while( x <= x_max ):
-            y = math.ceil(y_min)
-            while( y <= y_max ):
-                if p_z > depth[x,y]:
-                    depth[x][y] = p_z
+        # x = math.ceil(x_min)
+        # while( x <= x_max ):
+        #     y = math.ceil(y_min)
+        #     while( y <= y_max ):
+        #         if p_z > depth[x,y]:
+        #             depth[x][y] = p_z
                         
-                    img[x][y] = 1 - depth[x][y] * 1.0 / origin_z
+        #             img[x][y] = 1 - depth[x][y] * 1.0 / origin_z
                 
-                y = y + 1
+        #         y = y + 1
 
-            x = x + 1
+        #     x = x + 1
 
+        # !!! special for target 128 size picture
+        x = math.ceil(x_min)
+        y = math.ceil(y_min)
+        if p_z > depth[x,y]:
+            depth[x][y] = p_z
+                
+            img[x][y] = 1 - depth[x][y] * 1.0 / origin_z
+
+        if x + 1 <= x_max and p_z > depth[x+1,y]:
+            depth[x+1][y] = p_z
+                
+            img[x+1][y] = 1 - depth[x+1][y] * 1.0 / origin_z
+
+        if y + 1 <= y_max and p_z > depth[x,y+1]:
+            depth[x][y+1] = p_z
+                
+            img[x][y+1] = 1 - depth[x][y+1] * 1.0 / origin_z
+
+        if x + 1 <= x_max and y + 1 <= y_max and p_z > depth[x+1,y+1]:
+            depth[x+1][y+1] = p_z
+                
+            img[x+1][y+1] = 1 - depth[x+1][y+1] * 1.0 / origin_z
+            
+        
 
     #print('summarize point_list cost:' + str(time.time()-tick) + 'sec')
     return img
@@ -167,25 +191,29 @@ def axis_view_matrix(axis: glm.vec3):
     xaxis = yaxis.cross(zaxis)
     xaxis = xaxis.normalize()
 
-    return glm.mat3(xaxis.x,xaxis.y,xaxis.z,
-        yaxis.x,yaxis.y,yaxis.z,
-        zaxis.x,zaxis.y,zaxis.z)
+    # return glm.mat3(xaxis.x,xaxis.y,xaxis.z,
+    #     yaxis.x,yaxis.y,yaxis.z,
+    #     zaxis.x,zaxis.y,zaxis.z)
+
+    return np.array([[xaxis.x,xaxis.y,xaxis.z], [yaxis.x,yaxis.y,yaxis.z], [zaxis.x,zaxis.y,zaxis.z]],dtype=float)
 
 # see from the transfered top toward -z' axis
 # axis : the new z axis under the previous coordinate
 def axis_view_place_points(voxel ,transfer_matrix):
-    #tick = time.time()
+    tick = time.time()
 
     point_list = border_find_points_simple(voxel)
 
-    #print('find points cost:' + str(time.time()-tick) + ' sec')
+    print(point_list.shape)
+    print('find points cost:' + str(time.time()-tick) + ' sec')
 
-    #tick = time.time()
+    tick = time.time()
 
     new_point_list = []
     for point in point_list:
-        new_point_list.append(transfer_matrix * point)
+        # new_point_list.append(transfer_matrix * point)
+        new_point_list.append(np.dot(transfer_matrix,point))
 
-    #print('multiply cost:' + str(time.time()-tick) + ' sec')
+    print('multiply cost:' + str(time.time()-tick) + ' sec')
 
     return new_point_list
