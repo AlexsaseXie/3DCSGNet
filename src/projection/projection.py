@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from src.display.glm import glm
-from src.projection.find_points import border_find_points
+from src.projection.find_points import *
 
 import time
 
@@ -116,7 +116,7 @@ def z_parrallel_projection_point(point_list, center_x , center_y , origin_w=128,
 # origin_w : x side of the view
 # origin_h : y side of the view
 def z_parrallel_projection_point_simple(point_list, center_x , center_y , origin_w=128, origin_h=128 , origin_z=128 , w=128, h=128 ):
-    # tick = time.time()
+    #tick = time.time()
     img = np.ones([w,h],dtype=float)
     depth = np.zeros([w,h], dtype=float)
 
@@ -153,7 +153,7 @@ def z_parrallel_projection_point_simple(point_list, center_x , center_y , origin
             x = x + 1
 
 
-    # print('summarize point_list cost:' + str(time.time()-tick) + 'sec')
+    #print('summarize point_list cost:' + str(time.time()-tick) + 'sec')
     return img
 
 
@@ -174,15 +174,18 @@ def axis_view_matrix(axis: glm.vec3):
 # see from the transfered top toward -z' axis
 # axis : the new z axis under the previous coordinate
 def axis_view_place_points(voxel ,transfer_matrix):
-    point_list = border_find_points(voxel)
+    #tick = time.time()
 
-    #axis = axis.normalize()
-    #transfer_matrix = axis_view_matrix(axis)
+    point_list = border_find_points_simple(voxel)
 
-    #print('t m:',transfer_matrix)
+    #print('find points cost:' + str(time.time()-tick) + ' sec')
+
+    #tick = time.time()
 
     new_point_list = []
     for point in point_list:
         new_point_list.append(transfer_matrix * point)
+
+    #print('multiply cost:' + str(time.time()-tick) + ' sec')
 
     return new_point_list

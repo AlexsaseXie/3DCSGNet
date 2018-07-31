@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import math
+import time
 
 from src.display.glm import glm
 from src.Generator.generator import *
@@ -38,7 +39,11 @@ for program_length in data_label_paths:
         #point_list = border_find_points(voxel)
         #center = glm.vec3(32,32,32)
 
+        tick = time.time()
+
         point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
+
+        #print('generate point list in ' + str(time.time()-tick) + ' sec')
 
         #projection 
         #img = z_parrallel_projection(voxel, 32 , 32)
@@ -47,9 +52,9 @@ for program_length in data_label_paths:
         #img_mask = img * 255
         #img_mask = np.array(img_mask,dtype=int)
         
-        #cv2.imwrite('data/2D-depth/' + str(program_length) + '/' + str(index) +'.jpg' , img_mask)
+        #cv2.imwrite('data/2D-depth-simple/' + str(program_length) + '/' + str(index) +'.jpg' , img_mask)
             
-        print('finish processing pic '+str(index))
+        #print('finish processing pic '+str(index) + ' in ' + str(time.time()-tick) + ' sec\n')
 
     print('Finish processing ' + str(program_length) + ' instructions programs')
 
