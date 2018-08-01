@@ -301,7 +301,7 @@ class PM_CsgNet(nn.Module):
         :param stack_len: Number of stack elements as input
         :param grid_shape: 3D grid structure.
         """
-        super(M_CsgNet, self).__init__()
+        super(PM_CsgNet, self).__init__()
 
         self.init_projector()
 
