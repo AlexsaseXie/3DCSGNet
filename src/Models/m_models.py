@@ -301,7 +301,7 @@ class PM_CsgNet(nn.Module):
         :param stack_len: Number of stack elements as input
         :param grid_shape: 3D grid structure.
         """
-        super(M_CsgNet, self).__init__()
+        super(PM_CsgNet, self).__init__()
 
         self.init_projector()
 
@@ -399,7 +399,7 @@ class PM_CsgNet(nn.Module):
 
         batch_size = x.size()[0]
         x = self.project(x)
-        
+        print('after projection:', x.shape)
         x = self._encoder(x)
         x = x.view(1, batch_size, self.in_sz)
         return x
@@ -414,10 +414,10 @@ class PM_CsgNet(nn.Module):
         if self.mode == 1:
             """Teacher forcing network"""
             data, input_op, program_len = x
-            data = data.permute(1, 0, 2, 3, 4)
+            data = data.permute(1, 0, 2, 3, 4, 5)
             batch_size = data.size()[1]
             h = Variable(torch.zeros(1, batch_size, self.hd_sz)).cuda()
-            x_f = self.encoder(data[-1, :, 0:1, :, :])
+            x_f = self.encoder(data[-1, :, 0:1, :, :, :])
             outputs = []
             for timestep in range(0, program_len + 1):
                 # X_f is always input to the network at every time step
