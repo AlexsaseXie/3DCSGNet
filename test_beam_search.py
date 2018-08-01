@@ -126,9 +126,7 @@ for k in data_labels_paths.keys():
         target_expressions = parser.labels2exps(labels, k)
         Target_expressions += target_expressions
 
-        target_stacks = parser.expression2stack(target_expressions)
-
-        target_images = target_stacks[-1, :, 0, :, :, :].astype(dtype=bool)
+        target_images = data_[-1, :, 0, :, :, :].astype(dtype=bool)
         target_images_new = np.repeat(target_images, axis=0,
                                       repeats=beam_width)
         predicted_stack = stack_from_expressions(parser, expressions)

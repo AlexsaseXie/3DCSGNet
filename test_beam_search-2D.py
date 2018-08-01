@@ -54,14 +54,14 @@ if torch.cuda.device_count() > 1:
     imitate_net = torch.nn.DataParallel(imitate_net, dim=0)
     imitate_net.load_state_dict(torch.load(config.pretrain_modelpath))
 else:
-    weights = torch.load(config.pretrain_modelpath)
-    new_weights = {}
-    for k in weights.keys():
-        if k.startswith("module"):
-            new_weights[k[7:]] = weights[k]
-    imitate_net.load_state_dict(new_weights)
+    #weights = torch.load(config.pretrain_modelpath)
+    #new_weights = {}
+    #for k in weights.keys():
+    #    if k.startswith("module"):
+    #        new_weights[k[7:]] = weights[k]
+    #imitate_net.load_state_dict(new_weights)
 
-    #imitate_net.load_state_dict(torch.load(config.pretrain_modelpath))
+    imitate_net.load_state_dict(torch.load(config.pretrain_modelpath))
 
 imitate_net.cuda()
 
@@ -96,13 +96,13 @@ for k in data_labels_paths.keys():
     Rs = 0.0
     for batch_idx in range(dataset_sizes[k][1] // config.batch_size):
         data_, labels = next(test_gen_objs[k])
-        data_ = data_[:, :, 0:config.top_k + 1, :, :, :]
+        data_ = data_[:, :, 0:config.top_k + 1, :, :]
         one_hot_labels = prepare_input_op(labels, len(generator.unique_draw))
         one_hot_labels = Variable(torch.from_numpy(one_hot_labels), volatile=True).cuda()
         data = Variable(torch.from_numpy(data_)).cuda()
         labels = Variable(torch.from_numpy(labels)).cuda()
         # This is for data parallelism purpose
-        data = data.permute(1, 0, 2, 3, 4, 5)
+        data = data.permute(1, 0, 2, 3, 4)
 
         all_beams, next_beams_prob, all_inputs = imitate_net.beam_search_mode_1(
             [data, one_hot_labels], beam_width, max_len)
@@ -127,7 +127,9 @@ for k in data_labels_paths.keys():
         target_expressions = parser.labels2exps(labels, k)
         Target_expressions += target_expressions
 
-        target_images = data_[-1, :, 0, :, :].astype(dtype=bool)
+        target_stacks = parser.expression2stack(target_expressions)
+
+        target_images = target_stacks[-1,:,0,:,:,:].astype(dtype=bool)
         target_images_new = np.repeat(target_images, axis=0,
                                       repeats=beam_width)
         predicted_stack = stack_from_expressions(parser, expressions)
