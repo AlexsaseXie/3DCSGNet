@@ -60,8 +60,8 @@ def init_img():
 
     voxel = voxels_from_expressions([expression, target_expression], primitives, max_len=7)
 
-    img_points = border_find_points(voxel[0])
-    target_img_points = border_find_points(voxel[1])
+    img_points = border_find_points_simple(voxel[0])
+    target_img_points = border_find_points_simple(voxel[1])
 
     print('loading fish!')
 
