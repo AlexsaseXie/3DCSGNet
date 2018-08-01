@@ -7,8 +7,9 @@ import os
 import json
 from torch.autograd.variable import Variable
 from src.Utils import read_config
-from src.Generator.generator import Generator
-from src.Models.models import CsgNet, ParseModelOutput
+from src.Generator.m_generator import M_Generator
+from src.Models.models import ParseModelOutput
+from src.Models.m_models import M_CsgNet
 from src.Utils.train_utils import prepare_input_op, stack_from_expressions, beams_parser
 import time
 import sys
@@ -20,12 +21,12 @@ else:
 print(config.config)
 
 
-data_labels_paths = {3: "data/one_op/expressions.txt",
-                     5: "data/two_ops/expressions.txt",
-                     7: "data/three_ops/expressions.txt"}
-dataset_sizes = {3: [110000, 1000],
-                 5: [220000, 2000],
-                 7: [440000, 4000]}
+data_labels_paths = {3: "data/one_op/expressions.txt"}
+                     #5: "data/two_ops/expressions.txt",
+                     #7: "data/three_ops/expressions.txt"}
+dataset_sizes = {3: [110000, 1000]}
+                 #5: [220000, 2000],
+                 #7: [440000, 4000]}
 
 test_gen_objs = {}
 types_prog = len(dataset_sizes.keys())
@@ -33,12 +34,12 @@ max_len = max(data_labels_paths.keys())
 beam_width = 10
 stack_size = max_len // 2 + 1
 
-generator = Generator(data_labels_paths=data_labels_paths,
+generator = M_Generator(data_labels_paths=data_labels_paths,
                       batch_size=config.batch_size,
                       time_steps=max(data_labels_paths.keys()),
                       stack_size=max(data_labels_paths.keys()) // 2 + 1)
 
-imitate_net = CsgNet(grid_shape=[64, 64, 64], dropout=config.dropout,
+imitate_net = M_CsgNet(grid_shape=[64, 64, 64], dropout=config.dropout,
                      mode=config.mode, timesteps=max_len,
                      num_draws=len(generator.unique_draw),
                      in_sz=config.input_size,
@@ -126,9 +127,7 @@ for k in data_labels_paths.keys():
         target_expressions = parser.labels2exps(labels, k)
         Target_expressions += target_expressions
 
-        target_stacks = parser.expression2stack(target_expressions)
-
-        target_images = target_stacks[-1, :, 0, :, :, :].astype(dtype=bool)
+        target_images = data_[-1, :, 0, :, :].astype(dtype=bool)
         target_images_new = np.repeat(target_images, axis=0,
                                       repeats=beam_width)
         predicted_stack = stack_from_expressions(parser, expressions)

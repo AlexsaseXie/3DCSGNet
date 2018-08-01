@@ -151,3 +151,127 @@ class M_CsgNet(nn.Module):
                 output = self.logsoftmax(self.dense_output(self.drop(hd)), )
                 outputs.append(output)
             return outputs    
+
+
+    def test(self, data):
+        """ Describes test behaviour of different models"""
+        if self.mode == 1:
+            """Testing for teacher forcing"""
+            data, input_op, program_len = data
+
+            # This permute is used for multi gpu training, where first dimension is
+            # considered as batch dimension.
+            data = data.permute(1, 0, 2, 3, 4)
+            batch_size = data.size()[1]
+            h = Variable(torch.zeros(1, batch_size, self.hd_sz)).cuda()
+            x_f = self.encoder(data[-1, :, 0:1, :, :])
+            last_op = input_op[:, 0, :]
+            outputs = []
+            for timestep in range(0, program_len):
+                # X_f is always input to the network at every time step
+                # along with previous predicted label
+                input_op_rnn = self.relu(self.dense_input_op(last_op))
+                input_op_rnn = input_op_rnn.unsqueeze(0)
+                input = torch.cat((self.drop(x_f), input_op_rnn), 2)
+                h, _ = self.rnn(input, h)
+                hd = self.relu(self.dense_fc_1(self.drop(h[0])))
+                output = self.logsoftmax(self.dense_output(self.drop(hd)))
+                outputs.append(output)
+                next_input_op = torch.max(output, 1)[1]
+                arr = Variable(torch.zeros(batch_size, self.num_draws + 1).scatter_(1,
+                                                                                    next_input_op.data.cpu().view(batch_size, 1),
+                                                                                    1.0)).cuda()
+                last_op = arr
+            return outputs
+
+    def beam_search_mode_1(self, data, w, max_time):
+        """
+        Implements beam search for different models.
+        :param x: Input data
+        :param w: beam width
+        :param max_time: Maximum length till the program has to be generated
+        :return all_beams: all beams to find out the indices of all the 
+        """
+        data, input_op = data
+
+        # Beam, dictionary, with elements as list. Each element of list
+        # containing index of the selected output and the corresponding
+        # probability.
+        data = data.permute(1, 0, 2, 3, 4)
+        pytorch_version = torch.__version__[2]
+        batch_size = data.size()[1]
+        h = Variable(torch.zeros(1, batch_size, self.hd_sz)).cuda()
+        # Last beams' data
+        B = {0: {"input": input_op, "h": h}, 1: None}
+        next_B = {}
+        x_f = self.encoder(data[-1, :, 0:1, :, :])
+        prev_output_prob = [Variable(torch.ones(batch_size, self.num_draws)).cuda()]
+        all_beams = []
+        all_inputs = []
+        stopped_programs = np.zeros((batch_size, w), dtype=bool)
+        for timestep in range(0, max_time):
+            outputs = []
+            for b in range(w):
+                if not B[b]:
+                    break
+                input_op = B[b]["input"]
+
+                h = B[b]["h"]
+                input_op_rnn = self.relu(self.dense_input_op(input_op[:, 0, :]))
+                input_op_rnn = input_op_rnn.view(1, batch_size,
+                                                 self.input_op_sz)
+                input = torch.cat((x_f, input_op_rnn), 2)
+                h, _ = self.rnn(input, h)
+                hd = self.relu(self.dense_fc_1(self.drop(h[0])))
+                dense_output = self.dense_output(self.drop(hd))
+                output = self.logsoftmax(dense_output)
+                # Element wise multiply by previous probabs
+                if pytorch_version == "3":
+                    output = torch.nn.Softmax(1)(output)
+                elif pytorch_version == "1":
+                    output = torch.nn.Softmax()(output)
+                output = output * prev_output_prob[b]
+                outputs.append(output)
+                next_B[b] = {}
+                next_B[b]["h"] = h
+
+            if len(outputs) == 1:
+                outputs = outputs[0]
+            else:
+                outputs = torch.cat(outputs, 1)
+
+            next_beams_index = torch.topk(outputs, w, 1, sorted=True)[1]
+            next_beams_prob = torch.topk(outputs, w, 1, sorted=True)[0]
+            # print (next_beams_prob)
+            current_beams = {"parent": next_beams_index.data.cpu().numpy() // (
+                self.num_draws),
+                             "index": next_beams_index % (self.num_draws)}
+            # print (next_beams_index % (self.num_draws))
+            next_beams_index %= (self.num_draws)
+            all_beams.append(current_beams)
+
+            # Update previous output probabilities
+            temp = Variable(torch.zeros(batch_size, 1)).cuda()
+            prev_output_prob = []
+            for i in range(w):
+                for index in range(batch_size):
+                    temp[index, 0] = next_beams_prob[index, i]
+                prev_output_prob.append(temp.repeat(1, self.num_draws))
+            # hidden state for next step
+            B = {}
+            for i in range(w):
+                B[i] = {}
+                temp = Variable(torch.zeros(h.size())).cuda()
+                for j in range(batch_size):
+                    temp[0, j, :] = next_B[current_beams["parent"][j, i]]["h"][0, j, :]
+                B[i]["h"] = temp
+
+            # one_hot for input to the next step
+            for i in range(w):
+                arr = Variable(torch.zeros(batch_size, self.num_draws + 1)
+                               .scatter_(1, next_beams_index[:, i:i + 1].data.cpu(),
+                                         1.0)).cuda()
+                B[i]["input"] = arr.unsqueeze(1)
+            all_inputs.append(B)
+
+        return all_beams, next_beams_prob, all_inputs
