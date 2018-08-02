@@ -40,6 +40,10 @@ class PushDownStack(object):
             stack_elements[j, :, :, :] = self.items[j]
         return stack_elements
 
+    def get_top(self):
+        voxel = self.items[0]
+        return voxel
+
     def clear(self):
         """Re-initializes the stack"""
         self.items = []

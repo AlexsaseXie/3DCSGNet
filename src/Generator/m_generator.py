@@ -191,16 +191,14 @@ class M_Generator:
 
                         stack = []
 
-                        for voxels in sim.stack_t:
+                        voxel = sim.stack.get_top()
 
-                            voxel = voxels[0]
+                        point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
 
-                            point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
+                        #projection 
+                        img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
 
-                            #projection 
-                            img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
-
-                            stack.append([img])
+                        stack.append([img])
                         
                         stack = np.stack(stack, axis=0)
 
@@ -307,17 +305,15 @@ class M_Generator:
                         #stacks.append(stack)
 
                         stack = []
+                        
+                        voxel = sim.stack.get_top()
 
-                        for voxels in sim.stack_t:
+                        point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
 
-                            voxel = voxels[0]
+                        #projection 
+                        img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
 
-                            point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
-
-                            #projection 
-                            img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
-
-                            stack.append([img])
+                        stack.append([img])
                         
                         stack = np.stack(stack, axis=0)
 

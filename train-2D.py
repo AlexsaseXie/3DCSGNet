@@ -173,55 +173,6 @@ for epoch in range(0, config.epochs):
     log_value('train_loss', mean_train_loss.cpu().numpy(), epoch)
     del data, loss, loss_sum, train_loss, outputs
 
-    """ test_losses = 0
-    imitate_net.eval()
-    test_reward = 0
-    for batch_idx in range(config.test_size // config.batch_size):
-        for k in data_labels_paths.keys():
-            parser = ParseModelOutput(generator.unique_draw,
-                                      stack_size=(k + 1) // 2 + 1,
-                                      steps=k,
-                                      canvas_shape=[64, 64, 64],
-                                      primitives=generator.primitives)
-            data_, labels = next(test_gen_objs[k])
-
-            one_hot_labels = prepare_input_op(labels, len(generator.unique_draw))
-            one_hot_labels = Variable(torch.from_numpy(one_hot_labels)).cuda()
-            data = Variable(torch.from_numpy(data_[:, :, 0:config.top_k + 1, :, :]), volatile=True).cuda()
-            data = data.permute(1, 0, 2, 3, 4)
-            labels = Variable(torch.from_numpy(labels)).cuda()
-
-            test_output = imitate_net([data, one_hot_labels, k])
-
-            l = losses_joint(test_output, labels, time_steps=k + 1).data
-            test_losses += l
-
-            if cuda_devices > 1:
-                test_output = imitate_net.module.test([data, one_hot_labels, k])
-            else:
-                test_output = imitate_net.test([data, one_hot_labels, k])
-
-            stack, _, _ = parser.get_final_canvas(test_output, if_pred_images=True,
-                                                  if_just_expressions=False)
-            data_ = data_[-1, :, 0, :, :, :]
-            R = np.sum(np.logical_and(stack, data_), (1, 2, 3)) / (
-            np.sum(np.logical_or(stack, data_), (1, 2, 3)) + 1)
-            test_reward += np.sum(R)
-
-    test_reward = test_reward / (test_size // batch_size) / ((batch_size // types_prog) * types_prog)
-
-    test_loss = test_losses.cpu().numpy() / (config.test_size // config.batch_size) / types_prog
-    log_value('test_loss', test_loss, epoch)
-    log_value('test_IOU', test_reward / (config.test_size // config.batch_size), epoch)
-    callback.add_value({
-        "test_loss": test_loss,
-    })
-    print ("Average test IOU: {} at {} epoch".format(test_reward, epoch))
-    if config.if_schedule:
-        reduce_plat.reduce_on_plateu(-test_reward)
-
-    del test_losses, test_output """
-
     print('finish epoch ' + str(epoch))
     #if test_reward > prev_test_reward:
     torch.save(imitate_net.state_dict(),
