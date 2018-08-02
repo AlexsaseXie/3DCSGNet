@@ -34,6 +34,10 @@ class GlobalStorage:
         self.img_points = []
         self.target_img_points = []
 
+class Communicate(QObject):
+
+    rightChangeIndex = pyqtSignal()
+    updateParams = pyqtSignal()
  
 class MainWindow(QMainWindow):
     """docstring for Mainwindow"""
@@ -58,11 +62,11 @@ class MainWindow(QMainWindow):
  
 	#分割窗口
     def split_(self):
-        self.s = OpenGLWidget(storage = self.storage)   #将opengl例子嵌入GUI
+        self.right = OpenGLWidget(storage = self.storage, main_window = self)   #将opengl例子嵌入GUI
         splitter_main = QSplitter(Qt.Horizontal)
-        self.textedit_main = QTextEdit()
-        splitter_main.addWidget(self.textedit_main)
-        splitter_main.addWidget(self.s)
+        self.left = LeftWidget(storage = self.storage, main_window = self)
+        splitter_main.addWidget(self.left)
+        splitter_main.addWidget(self.right)
         splitter_main.setStretchFactor(0,2)
         splitter_main.setStretchFactor(2,4)
         return splitter_main
@@ -71,15 +75,84 @@ class MainWindow(QMainWindow):
         if e.key() == QtCore.Qt.Key_Escape:
             self.close()
 
+    ###SLOTS:
+    def leftChangeIndex(self):
+        self.storage.current_index = int(self.left.indexEdit.text())
+
+        self.left.indexEdit.setText(str(self.storage.current_index))
+        
+        self.right.init_img()
+
+        self.right.reset()
+        self.right.updateGL()
+
+    def rightChangeIndex(self):
+        self.left.indexEdit.setText(str(self.storage.current_index))
+
+        self.right.init_img()
+
+        self.right.reset()
+        self.right.updateGL()
+
+    def updateParams(self):
+        self.left.eyeEdit.setText(str(self.storage.eye))
+        self.left.upEdit.setText(str(self.storage.up))
+        self.left.centerEdit.setText(str(self.storage.center))
+
 class LeftWidget(QWidget):
-    def __init__(self, storage = None):
+    def __init__(self, storage = None, main_window = None):
         super(LeftWidget, self,).__init__()        
         self.storage = storage
+        self.main_window = main_window
+
+        self.initUI()
+
+    def initUI(self):
+        grid = QGridLayout()
+        grid.setSpacing(10)
+
+        self.eyeTitle = QLabel('eye')
+        self.eyeEdit = QLabel(str(self.storage.eye))
+
+        grid.addWidget(self.eyeTitle,1, 0)
+        grid.addWidget(self.eyeEdit,1, 1)
+
+        self.upTitle = QLabel('up')
+        self.upEdit = QLabel(str(self.storage.up))
+
+        grid.addWidget(self.upTitle, 2, 0)
+        grid.addWidget(self.upEdit, 2, 1)
+
+        self.centerTitle = QLabel('center')
+        self.centerEdit = QLabel(str(self.storage.center))
+
+        grid.addWidget(self.centerTitle, 3, 0)
+        grid.addWidget(self.centerEdit, 3, 1)
+
+        self.indexTitle = QLabel('index')
+        self.indexEdit = QLineEdit()
+        self.indexEdit.setText(str(self.storage.current_index))
+        self.indexButton = QPushButton('Go To')
+        self.indexButton.clicked.connect(self.main_window.leftChangeIndex)
+
+        
+        grid.addWidget(self.indexTitle,4, 0)
+        grid.addWidget(self.indexEdit,4, 1)
+        grid.addWidget(self.indexButton,4, 2)
+
+
+        self.setLayout(grid)
+        self.show()
 
 class OpenGLWidget(QGLWidget):
-    def __init__(self, storage = None):
+    def __init__(self, storage = None, main_window = None):
         super(OpenGLWidget,self).__init__()
         self.storage = storage
+        self.main_window = main_window
+
+        self.c = Communicate()
+        self.c.rightChangeIndex.connect(self.main_window.rightChangeIndex)
+        self.c.updateParams.connect(self.main_window.updateParams)
 
     def init_img(self):
         print('loading models...')
@@ -108,6 +181,8 @@ class OpenGLWidget(QGLWidget):
         self.storage.center.z = 32
 
         self.storage.is_target = False
+
+        self.c.updateParams.emit()
 
     def single_cube(self, center, l):
         glBegin(GL_QUADS)
@@ -247,17 +322,9 @@ class OpenGLWidget(QGLWidget):
         glEnd()
 
     def initializeGL(self):
-        #self.init_global_params()
-
         # otherwise right widget won't be focused on
         self.setFocusPolicy(Qt.StrongFocus)
 
-        # glClearColor(1,0,0,1)
-        # glEnable(GL_DEPTH_TEST)
-        # glEnable(GL_LIGHT0)
-        # glEnable(GL_LIGHTING)
-        # glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
-        # glEnable(GL_COLOR_MATERIAL)
         glClearColor(1.0, 1.0, 1.0, 0.0)
         glClearDepth(1.0)
         glDepthFunc(GL_LESS)
@@ -301,23 +368,29 @@ class OpenGLWidget(QGLWidget):
         if e.key() == QtCore.Qt.Key_A:
             self.storage.eye, self.storage.up = transform.left(5.0, self.storage.eye, self.storage.up, self.storage.center)
             self.updateGL()
+            self.c.updateParams.emit()
         if e.key() == QtCore.Qt.Key_D:
             self.storage.eye, self.storage.up = transform.left(-5.0, self.storage.eye, self.storage.up, self.storage.center)
             self.updateGL()
+            self.c.updateParams.emit()
         if e.key() == QtCore.Qt.Key_W:
             self.storage.eye, self.storage.up = transform.up(5.0, self.storage.eye, self.storage.up, self.storage.center)
             self.updateGL()
+            self.c.updateParams.emit()
         if e.key() == QtCore.Qt.Key_S:
             self.storage.eye, self.storage.up = transform.up(-5.0, self.storage.eye, self.storage.up, self.storage.center)
             self.updateGL()
+            self.c.updateParams.emit()
 
 
         if e.key() == QtCore.Qt.Key_N:
             self.storage.eye, self.storage.up = transform.near(2, self.storage.eye, self.storage.up, self.storage.center)
             self.updateGL()
+            self.c.updateParams.emit()
         if e.key() == QtCore.Qt.Key_M:
             self.storage.eye, self.storage.up = transform.near(-2, self.storage.eye, self.storage.up, self.storage.center)
             self.updateGL()
+            self.c.updateParams.emit()
 
 
         if e.key() == QtCore.Qt.Key_R:
@@ -331,27 +404,20 @@ class OpenGLWidget(QGLWidget):
         if e.key() == QtCore.Qt.Key_Left:
             self.storage.current_index -= 1
             self.storage.current_index = self.storage.current_index % len(self.storage.expressions)
-            self.init_img()
 
-            self.reset()
-            self.updateGL()
+            self.c.rightChangeIndex.emit()
 
         if e.key() == QtCore.Qt.Key_Right:
             self.storage.current_index += 1
             self.storage.current_index = self.storage.current_index % len(self.storage.expressions)
-            self.init_img()
-
-            self.reset()
-            self.updateGL()
+            
+            self.c.rightChangeIndex.emit()
         
         if e.key() == QtCore.Qt.Key_Down:
             self.storage.current_index = random.randint(0, len(self.storage.expressions) - 1)
-            self.init_img()
+            
+            self.c.rightChangeIndex.emit()
 
-            self.reset()
-            self.updateGL()
-        
-        
  
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -362,3 +428,12 @@ if __name__ == "__main__":
     win = MainWindow(storage=storage)
     win.show()
     sys.exit(app.exec_())
+
+    print('HELP TEXT:')
+    print('\n ----------------------------- \n')
+    print ('wasd : rotate the view point')
+    print ('nm : drag the view point nearer or further')
+    print ('r : reset eye and view direction')
+    print ('t : toggle to view predicted model and target model')
+    print ('Left and Right Key : view next model\'s voxel representation')
+    print('\n ----------------------------- \n')
