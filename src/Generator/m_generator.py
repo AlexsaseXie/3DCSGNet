@@ -5,6 +5,7 @@ Generates training and testing data in mini batches.
 import deepdish as dd
 import numpy as np
 from matplotlib import pyplot as plt
+import cv2
 from .parser import Parser
 from .stack import SimulateStack
 
@@ -149,17 +150,19 @@ class M_Generator:
         transfer_matrix = axis_view_matrix(axis=axis)
         center = np.dot( transfer_matrix,np.array([32,32,32],dtype=float) )
 
-        # if final_canvas:
-        #     # We will load all the final canvases from the disk.
-        #     path = self.data_labels_path[program_len]
-        #     path = path[0:-15]
-        #     Stack = np.zeros((1, num_train_images, 1, self.canvas_shape[0],
-        #                       self.canvas_shape[1], self.canvas_shape[2]),
-        #                      dtype=np.bool)
-        #     for i in range(num_train_images):
-        #         p = path + "{}.png".format(i + 1)
-        #         img = plt.imread(p)[:, :, 0]
-        #         Stack[0, i, 0, :, :] = img.astype(np.bool)
+        image_path = 'data/2D/'
+
+        if final_canvas:
+            # We will load all the final canvases from the disk.
+            path = image_path + str(program_len) + '/'
+            Stack = np.zeros((1, num_train_images, 1, 128, 128),
+                             dtype=float)
+            for i in range(num_train_images):
+                p = path + "{}.png".format(i)
+                img = cv2.imread(p)
+                img = np.array(img,dtype = float)
+                img = img / 255
+                Stack[0, i, 0, :, :] = img
 
         while True:
             # Random things to select random indices
@@ -205,10 +208,10 @@ class M_Generator:
                         stacks.append(stack)
                         
                     stacks = np.stack(stacks, 1).astype(dtype=np.float32)
-                # else:
-                #     # When only target image is required
-                #     stacks = Stack[0:1, image_ids, 0:1, :, :, :].astype(
-                #         dtype=np.float32)
+                else:
+                    # Only target image is required
+                    stacks = Stack[0:1, image_ids, 0:1, :, :, :].astype(
+                        dtype=np.float32)
                 for index, value in enumerate(image_ids):
                     # Get the current program
                     exp = self.programs[program_len][value]
@@ -260,18 +263,20 @@ class M_Generator:
         transfer_matrix = axis_view_matrix(axis=axis)
         center = np.dot( transfer_matrix,np.array([32,32,32],dtype=float) )
 
-        # if final_canvas:
-        #     # We will load all the final canvases from the disk.
-        #     path = self.data_labels_path[program_len]
-        #     path = path[0:-15]
-        #     Stack = np.zeros((1, num_test_images, 1, self.canvas_shape[0],
-        #                       self.canvas_shape[1], self.canvas_shape[2]),
-        #                      dtype=np.bool)
-        #     for i in range(num_train_images,
-        #                    num_test_images + num_train_images):
-        #         p = path + "{}.png".format(i + 1)
-        #         img = plt.imread(p)[:, :, 0]
-        #         Stack[0, i, 0, :, :] = img.astype(np.bool)
+        image_path = 'data/2D/'
+
+        if final_canvas:
+            # We will load all the final canvases from the disk.
+            path = image_path + str(program_len) + '/'
+            Stack = np.zeros((1, num_test_images, 1, 128, 128),
+                             dtype=float)
+            for i in range(num_train_images,
+                           num_test_images + num_train_images):
+                p = path + "{}.png".format(i)
+                img = cv2.imread(p)
+                img = np.array(img,dtype = float)
+                img = img / 255
+                Stack[0, i, 0, :, :] = img
 
         while True:
             # Random things to select random indices
@@ -320,10 +325,10 @@ class M_Generator:
                         stacks.append(stack)
 
                     stacks = np.stack(stacks, 1).astype(dtype=np.float32)
-                # else:
-                #     # When only target image is required
-                #     stacks = Stack[0:1, image_ids, 0:1, :, :, :].astype(
-                #         dtype=np.float32)
+                else:
+                    # When only target image is required
+                    stacks = Stack[0:1, image_ids, 0:1, :, :, :].astype(
+                        dtype=np.float32)
                 for index, value in enumerate(image_ids):
                     # Get the current program
                     exp = self.programs[program_len][value]

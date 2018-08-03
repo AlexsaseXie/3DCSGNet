@@ -11,6 +11,10 @@ from src.Generator.m_generator import M_Generator
 from src.Models.models import ParseModelOutput
 from src.Models.m_models import M_CsgNet
 from src.Utils.train_utils import prepare_input_op, stack_from_expressions, beams_parser
+
+from src.display.glm import glm
+from src.projection.projection import *
+
 import time
 import sys
 
@@ -129,16 +133,31 @@ for k in data_labels_paths.keys():
 
         target_stacks = parser.expression2stack(target_expressions)
 
-        target_images = target_stacks[-1,:,0,:,:,:].astype(dtype=bool)
-        target_images_new = np.repeat(target_images, axis=0,
+        target_voxels = target_stacks[-1,:,0,:,:,:].astype(dtype=bool)
+        target_voxels_new = np.repeat(target_voxels, axis=0,
                                       repeats=beam_width)
         predicted_stack = stack_from_expressions(parser, expressions)
 
-        beam_R = np.sum(np.logical_and(target_images_new, predicted_stack), (1, 2,
+        beam_R = np.sum(np.logical_and(target_voxels_new, predicted_stack), (1, 2,
                                                                              3)) / \
-                 (np.sum(np.logical_or(target_images_new, predicted_stack), (1, 2,
+                 (np.sum(np.logical_or(target_voxels_new, predicted_stack), (1, 2,
                                                                              3)) + 1)
+        axis = glm.vec3(1,1,1)
+        transfer_matrix = axis_view_matrix(axis=axis)
+        center = np.dot( transfer_matrix,np.array([32,32,32],dtype=float) )
+        
+        # choose an output whose projection is the most similar to the input 2D image
+        predicted_images = np.zeros([beam_width * config.batch_size, 128, 128], dtype = float)
+        for index,voxel in enumerate(predicted_stack):
+            point_list = axis_view_place_points(voxel, transfer_matrix = transfer_matrix)
 
+            img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
+        
+            predicted_images[index,:,:] = img
+
+        target_images = data_[-1, :, 0, :, :]
+        beam_choose_R = np.sum( (predicted_images - target_images) * (predicted_images - target_images), (1,2) )
+        
         # There are some expressions as input that result in the blank canvas. So we just
         # set these input's reward to the 0 value of top_1 prediction.
         where_are_NaNs = np.isnan(beam_R)
@@ -146,10 +165,12 @@ for k in data_labels_paths.keys():
 
         R = np.zeros(config.batch_size)
         for r in range(config.batch_size):
-            R[r] = np.max(beam_R[r * beam_width: (r + 1) * beam_width])
+            max_choose_R = np.max(beam_choose_R[r * beam_width: (r + 1) * beam_width])
 
             # find the index of the best expression
-            max_index = np.where(beam_R [r * beam_width: (r + 1) * beam_width] == R[r])
+            max_index = np.where(beam_choose_R [r * beam_width: (r + 1) * beam_width] == max_choose_R)
+            
+            R[r] = beam_R[ max_index[0][0] + r * beam_width ]
             Predicted_expressions.append(expressions[max_index[0][0] + r * beam_width])
 
         Rs += np.sum(R)
