@@ -84,6 +84,7 @@ for k in data_labels_paths.keys():
                                                num_train_images=dataset_sizes[k][0],
                                                num_test_images=dataset_sizes[k][1],
                                                if_primitives=True,
+                                               final_canvas=True,
                                                if_jitter=False)
 
 Target_expressions = []
@@ -156,7 +157,8 @@ for k in data_labels_paths.keys():
             predicted_images[index,:,:] = img
 
         target_images = data_[-1, :, 0, :, :]
-        beam_choose_R = np.sum( (predicted_images - target_images) * (predicted_images - target_images), (1,2) )
+        target_images_new = np.repeat(target_images, axis=0, repeats=beam_width)
+        beam_choose_R = np.sum( (predicted_images - target_images_new) * (predicted_images - target_images_new), (1,2) )
         
         # There are some expressions as input that result in the blank canvas. So we just
         # set these input's reward to the 0 value of top_1 prediction.
@@ -188,13 +190,13 @@ results = {"total_iou": total_iou, "iou": IOU}
 results_path = "trained_models/results/{}/".format(config.pretrain_modelpath)
 os.makedirs(os.path.dirname(results_path), exist_ok=True)
 
-with open(results_path + "beam_{}_pred.txt".format(beam_width), "w") as file:
+with open(results_path + "beam_{}_pred-M.txt".format(beam_width), "w") as file:
     for p in Predicted_expressions:
         file.write(p + "\n")
 
-with open(results_path + "beam_{}_target.txt".format(beam_width), "w") as file:
+with open(results_path + "beam_{}_target-M.txt".format(beam_width), "w") as file:
     for p in Target_expressions:
         file.write(p + "\n")
 
-with open(results_path + "beam_{}_results.org".format(beam_width), 'w') as outfile:
+with open(results_path + "beam_{}_results-M.org".format(beam_width), 'w') as outfile:
     json.dump(results, outfile)

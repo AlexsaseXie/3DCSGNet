@@ -158,8 +158,8 @@ class M_Generator:
             Stack = np.zeros((1, num_train_images, 1, 128, 128),
                              dtype=float)
             for i in range(num_train_images):
-                p = path + "{}.png".format(i)
-                img = cv2.imread(p)
+                p = path + "{}.jpg".format(i)
+                img = cv2.imread(p,0)
                 img = np.array(img,dtype = float)
                 img = img / 255
                 Stack[0, i, 0, :, :] = img
@@ -210,7 +210,7 @@ class M_Generator:
                     stacks = np.stack(stacks, 1).astype(dtype=np.float32)
                 else:
                     # Only target image is required
-                    stacks = Stack[0:1, image_ids, 0:1, :, :, :].astype(
+                    stacks = Stack[0:1, image_ids, 0:1, :, :].astype(
                         dtype=np.float32)
                 for index, value in enumerate(image_ids):
                     # Get the current program
@@ -272,11 +272,11 @@ class M_Generator:
                              dtype=float)
             for i in range(num_train_images,
                            num_test_images + num_train_images):
-                p = path + "{}.png".format(i)
-                img = cv2.imread(p)
+                p = path + "{}.jpg".format(i)
+                img = cv2.imread(p,0)
                 img = np.array(img,dtype = float)
                 img = img / 255
-                Stack[0, i, 0, :, :] = img
+                Stack[0, i-num_train_images, 0, :, :] = img
 
         while True:
             # Random things to select random indices
@@ -327,7 +327,8 @@ class M_Generator:
                     stacks = np.stack(stacks, 1).astype(dtype=np.float32)
                 else:
                     # When only target image is required
-                    stacks = Stack[0:1, image_ids, 0:1, :, :, :].astype(
+                    fetch_ids = image_ids - num_train_images
+                    stacks = Stack[0:1, fetch_ids , 0:1, :, :].astype(
                         dtype=np.float32)
                 for index, value in enumerate(image_ids):
                     # Get the current program

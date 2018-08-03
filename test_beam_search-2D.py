@@ -80,6 +80,7 @@ for k in data_labels_paths.keys():
                                                num_train_images=dataset_sizes[k][0],
                                                num_test_images=dataset_sizes[k][1],
                                                if_primitives=True,
+                                               final_canvas=True,
                                                if_jitter=False)
 
 Target_expressions = []

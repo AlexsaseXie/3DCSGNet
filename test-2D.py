@@ -24,7 +24,7 @@ print(config.config)
 data_labels_paths = {3: "data/one_op/expressions.txt"}
                      #5: "data/two_ops/expressions.txt",
                      #7: "data/three_ops/expressions.txt"}
-dataset_sizes = {3: [110000, 20000]}
+dataset_sizes = {3: [110000, 2000]}
                  #5: [220000, 40000],
                  #7: [440000, 80000]}
 
@@ -78,6 +78,7 @@ for k in data_labels_paths.keys():
                                                num_train_images=dataset_sizes[k][0],
                                                num_test_images=dataset_sizes[k][1],
                                                if_primitives=True,
+                                               final_canvas=True,
                                                if_jitter=False)
 
 Target_expressions = []

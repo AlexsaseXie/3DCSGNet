@@ -97,7 +97,6 @@ reduce_plat = LearningRate(optimizer, init_lr=config.lr, lr_dacay_fact=0.2,
                            lr_decay_epoch=3, patience=config.patience)
 
 train_gen_objs = {}
-test_gen_objs = {}
 
 # Prefetching minibatches
 for k in data_labels_paths.keys():
@@ -109,13 +108,8 @@ for k in data_labels_paths.keys():
                                                  k,
                                                  num_train_images=dataset_sizes[k][0],
                                                  if_primitives=True,
+                                                 final_canvas=True,
                                                  if_jitter=False)
-    test_gen_objs[k] = generator.get_test_data(test_batch_size,
-                                               k,
-                                               num_train_images=dataset_sizes[k][0],
-                                               num_test_images=dataset_sizes[k][1],
-                                               if_primitives=True,
-                                               if_jitter=False)
 
 prev_test_loss = 1e20
 prev_test_reward = 0

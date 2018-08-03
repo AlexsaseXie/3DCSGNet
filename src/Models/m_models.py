@@ -57,12 +57,17 @@ class M_CsgNet(nn.Module):
                                kernel_size=4, stride=(1, 1), padding=(2, 2))
 
         self.b4 = nn.BatchNorm2d(num_features=128)
+        
+        self.conv5 = nn.Conv2d(in_channels=128, out_channels=128,
+                               kernel_size=4, stride=(1, 1), padding=(2, 2))
+
+        self.b5 = nn.BatchNorm2d(num_features=128)
 
         # this sequential module is created for multi gpu training.
         self._encoder = nn.Sequential(
             self.conv1,
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(4, 4)),
+            nn.MaxPool2d(kernel_size=(2, 2)),
             nn.Dropout(dropout),
             self.b1,
             self.conv2,
@@ -80,6 +85,11 @@ class M_CsgNet(nn.Module):
             nn.MaxPool2d(kernel_size=(2, 2)),
             nn.Dropout(dropout),
             self.b4,
+            self.conv5,
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Dropout(dropout),
+            self.b5,
         )
 
         # output 4 * 4 * 128 = 2048 
