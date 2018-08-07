@@ -158,7 +158,7 @@ for k in data_labels_paths.keys():
 
         target_images = data_[-1, :, 0, :, :]
         target_images_new = np.repeat(target_images, axis=0, repeats=beam_width)
-        beam_choose_R = np.sum( (predicted_images - target_images_new) * (predicted_images - target_images_new), (1,2) )
+        beam_choose_R = np.sum( np.abs(predicted_images - target_images_new), (1,2) )
         
         # There are some expressions as input that result in the blank canvas. So we just
         # set these input's reward to the 0 value of top_1 prediction.
@@ -167,7 +167,7 @@ for k in data_labels_paths.keys():
 
         R = np.zeros(config.batch_size)
         for r in range(config.batch_size):
-            max_choose_R = np.max(beam_choose_R[r * beam_width: (r + 1) * beam_width])
+            max_choose_R = np.min(beam_choose_R[r * beam_width: (r + 1) * beam_width])
 
             # find the index of the best expression
             max_index = np.where(beam_choose_R [r * beam_width: (r + 1) * beam_width] == max_choose_R)
