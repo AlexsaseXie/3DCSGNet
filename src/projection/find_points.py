@@ -65,3 +65,36 @@ def border_find_points_simple(a):
     #    l.append(glm.vec3(i[0],i[1],i[2]))
 
     return indexl
+
+def border_find_planes(a):
+    zero_i = np.zeros([1,64,64] , dtype=bool)
+    ai_minus_1 =  np.concatenate((zero_i,a[:-1,:,:]), axis = 0)
+    ai_plus_1 = np.concatenate((a[1:,:,:] , zero_i), axis = 0)
+
+    zero_j = np.zeros([64,1,64], dtype = bool)
+    aj_minus_1 = np.concatenate((zero_j,a[:,:-1,:]), axis = 1)
+    aj_plus_1 = np.concatenate((a[:,1:,:] , zero_j), axis = 1)
+
+    zero_k = np.zeros([64,64,1], dtype = bool)
+    ak_minus_1 = np.concatenate((zero_k,a[:,:,:-1]), axis = 2)
+    ak_plus_1 = np.concatenate((a[:,:,1:] , zero_k), axis = 2)
+
+    x_positive = (a * 1. - np.logical_and(a, ai_plus_1) * 1.).astype(np.bool)
+    x_negative = (a * 1. - np.logical_and(a, ai_minus_1) * 1.).astype(np.bool)
+
+    y_positive = (a * 1. - np.logical_and(a, aj_plus_1) * 1.).astype(np.bool)
+    y_negative = (a * 1. - np.logical_and(a, aj_minus_1) * 1.).astype(np.bool)
+
+    z_positive = (a * 1. - np.logical_and(a, ak_plus_1) * 1.).astype(np.bool)
+    z_negative = (a * 1. - np.logical_and(a, ak_minus_1) * 1.).astype(np.bool)
+
+    index_x_positive = np.argwhere(x_positive == True)
+    index_x_negative = np.argwhere(x_negative == True)
+
+    index_y_positive = np.argwhere(y_positive == True)
+    index_y_negative = np.argwhere(y_negative == True)
+
+    index_z_positive = np.argwhere(z_positive == True)
+    index_z_negative = np.argwhere(z_negative == True)
+
+    return [index_x_positive, index_x_negative, index_y_positive, index_y_negative, index_z_positive, index_z_negative]

@@ -15,6 +15,33 @@ import deepdish as dd
 from src.Utils.train_utils import voxels_from_expressions
 import random
 
+def parse(expression):
+    """
+    NOTE: This method is different from parse method in Parser class
+    Takes an expression, returns a serial program
+    :param expression: program expression in postfix notation
+    :return program:
+    """
+    shape_types = ["u", "p", "y"]
+    op = ["*", "+", "-"]
+
+    program = []
+    for index, value in enumerate(expression):
+        if value in shape_types:
+            program.append({})
+            program[-1]["type"] = "draw"
+
+            # find where the parenthesis closes
+            close_paren = expression[index:].index(")") + index
+            program[-1]["value"] = expression[index:close_paren + 1]
+        elif value in op:
+            program.append({})
+            program[-1]["type"] = "op"
+            program[-1]["value"] = value
+        else:
+            pass
+    return program
+
 
 class GlobalStorage:
     def __init__(self):
@@ -33,6 +60,12 @@ class GlobalStorage:
         self.primitives = dd.io.load("data/primitives.h5")
         self.img_points = []
         self.target_img_points = []
+
+        self.img_planes = []
+        self.target_img_planes = []
+
+        self.target_str = ""
+        self.pred_str = ""
 
 class Communicate(QObject):
 
@@ -53,7 +86,7 @@ class MainWindow(QMainWindow):
     def basic(self):
         #设置标题，大小，图标
         self.setWindowTitle("GT")
-        self.resize(1100,650)
+        self.resize(1400,650)
         self.setWindowIcon(QIcon("./image/Gt.png"))
         #居中显示
         screen = QDesktopWidget().geometry()
@@ -67,8 +100,10 @@ class MainWindow(QMainWindow):
         self.left = LeftWidget(storage = self.storage, main_window = self)
         splitter_main.addWidget(self.left)
         splitter_main.addWidget(self.right)
-        splitter_main.setStretchFactor(0,2)
-        splitter_main.setStretchFactor(2,4)
+        splitter_main.setStretchFactor(0,1)
+        splitter_main.setStretchFactor(1,5)
+
+        splitter_main.handle(1).setDisabled(True)
         return splitter_main
     
     def keyPressEvent(self, e):
@@ -80,8 +115,11 @@ class MainWindow(QMainWindow):
         self.storage.current_index = int(self.left.indexEdit.text())
 
         self.left.indexEdit.setText(str(self.storage.current_index))
-        
+
         self.right.init_img()
+
+        self.left.predEdit.setText(str(self.storage.pred_str))
+        self.left.targetEdit.setText(str(self.storage.target_str))
 
         self.right.reset()
         self.right.updateGL()
@@ -90,6 +128,9 @@ class MainWindow(QMainWindow):
         self.left.indexEdit.setText(str(self.storage.current_index))
 
         self.right.init_img()
+
+        self.left.predEdit.setText(str(self.storage.pred_str))
+        self.left.targetEdit.setText(str(self.storage.target_str))
 
         self.right.reset()
         self.right.updateGL()
@@ -135,10 +176,21 @@ class LeftWidget(QWidget):
         self.indexButton = QPushButton('Go To')
         self.indexButton.clicked.connect(self.main_window.leftChangeIndex)
 
+        self.targetTitle = QLabel('target')
+        self.targetEdit = QLabel(str(self.storage.target_str))
+
+        self.predTitle = QLabel('predict')
+        self.predEdit = QLabel(str(self.storage.pred_str))
+
+        grid.addWidget(self.targetTitle, 4 ,0)
+        grid.addWidget(self.targetEdit, 4 , 1)
+        grid.addWidget(self.predTitle, 5, 0)
+        grid.addWidget(self.predEdit, 5, 1)
+
         
-        grid.addWidget(self.indexTitle,4, 0)
-        grid.addWidget(self.indexEdit,4, 1)
-        grid.addWidget(self.indexButton,4, 2)
+        grid.addWidget(self.indexTitle,6, 0)
+        grid.addWidget(self.indexEdit,6, 1)
+        grid.addWidget(self.indexButton,6, 2)
 
 
         self.setLayout(grid)
@@ -165,6 +217,44 @@ class OpenGLWidget(QGLWidget):
         self.storage.img_points = border_find_points_simple(voxel[0])
         self.storage.target_img_points = border_find_points_simple(voxel[1])
 
+        self.storage.img_planes = border_find_planes(voxel[0])
+        self.storage.target_img_planes = border_find_planes(voxel[1])
+
+        # calc the target_str
+        
+        pred_program = parse(expression)
+        target_program = parse(target_expression)
+
+        stack = []
+        for sentence in pred_program:
+            if (sentence['type'] == 'op'):
+                a = stack.pop()
+                b = stack.pop()
+                c = '( ' + a + ' ' + sentence['value'] + ' ' + b + ' )'
+                stack.append(c)
+            else:
+                stack.append(sentence['value'])
+
+        self.storage.pred_str = stack.pop()
+        count = len(self.storage.pred_str)
+        if (count >= 50):
+            self.storage.pred_str = self.storage.pred_str[0:50] + '\n' + self.storage.pred_str[50:]
+
+        stack = []
+        for sentence in target_program:
+            if (sentence['type'] == 'op'):
+                a = stack.pop()
+                b = stack.pop()
+                c = '( ' + a + ' ' + sentence['value'] + ' ' + b + ' )'
+                stack.append(c)
+            else:
+                stack.append(sentence['value'])
+
+        self.storage.target_str = stack.pop()
+        count = len(self.storage.target_str)
+        if (count >= 50):
+            self.storage.target_str = self.storage.target_str[0:50] + '\n' + self.storage.target_str[50:]
+
         print('loading fish!')
 
     def reset(self):
@@ -185,139 +275,155 @@ class OpenGLWidget(QGLWidget):
         self.c.updateParams.emit()
 
     def single_cube(self, center, l):
+        color = []
+        if (not self.storage.is_target):
+            color.append([0.3, 0.3, 0.0])
+            color.append([0.0, 0.5, 0.5])
+        else:
+            color.append([1.0, 0.0, 1.0])
+            color.append([1.0, 1.0, 0.0])
+            
         glBegin(GL_QUADS)
 
         #front
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
-        if not self.storage.is_target:
-            glColor3f(0.0, 0.3, 0.3)
-        else:
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
-        if not self.storage.is_target:
-            glColor3f(0.0, 0.3, 0.3)
-        else:
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
 
         #right
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
 
         #back
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
 
         #left
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
 
         #up 
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
 
         #down 
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
-        if not self.storage.is_target:
-            glColor3f(0.3, 0.3, 0.0)
-        else:
-            glColor3f(1.0, 0.0, 1.0)
+        glColor3f(color[0][0],color[0][1],color[0][2])
         glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
-        if not self.storage.is_target:         
-            glColor3f(0.0, 0.3, 0.3)     
-        else:         
-            glColor3f(1.0, 1.0, 0.0)
+        glColor3f(color[1][0],color[1][1],color[1][2])
         glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
+
+        glEnd()
+
+    def single_plane(self, center, l, direction):
+        color = []
+        if (not self.storage.is_target):
+            color.append([0.3, 0.3, 0.0])
+            color.append([0.0, 0.5, 0.5])
+        else:
+            color.append([1.0, 0.0, 1.0])
+            color.append([1.0, 1.0, 0.0])
+
+        glBegin(GL_QUADS)
+
+        if (direction == 0):
+            #front
+            glColor3f(color[0][0], color[0][1], color[0][2])
+            glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
+            glColor3f(color[0][0], color[0][1], color[0][2])
+            glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
+            glColor3f(color[1][0], color[1][1], color[1][2])
+            glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
+            glColor3f(color[1][0], color[1][1], color[1][2])
+            glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
+
+        elif (direction == 1):
+            #back
+            glColor3f(color[0][0], color[0][1], color[0][2])
+            glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
+            glColor3f(color[0][0], color[0][1], color[0][2])
+            glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
+            glColor3f(color[1][0], color[1][1], color[1][2])
+            glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
+            glColor3f(color[1][0], color[1][1], color[1][2])
+            glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
+
+        elif (direction == 2):
+            #right
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
+
+
+        elif (direction == 3):
+            #left
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
+
+        elif (direction == 4):
+            #up 
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] + l/2, center[1] - l/2, center[2] + l/2)
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] - l/2, center[1] - l/2, center[2] + l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] - l/2, center[1] + l/2, center[2] + l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] + l/2, center[1] + l/2, center[2] + l/2)
+        
+        elif (direction == 5):
+            #down 
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] + l/2, center[1] - l/2, center[2] - l/2)
+            glColor3f(color[0][0],color[0][1],color[0][2])
+            glVertex3f(center[0] - l/2, center[1] - l/2, center[2] - l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] - l/2, center[1] + l/2, center[2] - l/2)
+            glColor3f(color[1][0],color[1][1],color[1][2])
+            glVertex3f(center[0] + l/2, center[1] + l/2, center[2] - l/2)
 
         glEnd()
 
@@ -337,7 +443,7 @@ class OpenGLWidget(QGLWidget):
         gluPerspective(45.0, 640 / 480, 1, 500.0)
         glMatrixMode(GL_MODELVIEW)
 
-        self.init_img()
+        self.c.rightChangeIndex.emit()
 
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -348,18 +454,27 @@ class OpenGLWidget(QGLWidget):
                 self.storage.center.x , self.storage.center.y , self.storage.center.z, 
                 self.storage.up.x, self.storage.up.y, self.storage.up.z)
 
+        # if not self.storage.is_target:
+        #     for p in self.storage.img_points:
+        #         self.single_cube(p,1)
+        # else:
+        #     for p in self.storage.target_img_points:
+        #         self.single_cube(p,1)
+
         if not self.storage.is_target:
-            for p in self.storage.img_points:
-                self.single_cube(p,1)
-        else:
-            for p in self.storage.target_img_points:
-                self.single_cube(p,1)
+            for direction,p in enumerate(self.storage.img_planes):
+                for point in p:
+                    self.single_plane(point, 1 , direction=direction)
+        else: 
+            for direction,p in enumerate(self.storage.target_img_planes):
+                for point in p:
+                    self.single_plane(point, 1 , direction=direction)
 
     def resizeGL(self, w , h ):
         glViewport(0, 0, w,h)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(45.0,w /h, 0.1, 500.0)
+        gluPerspective(45.0,w / h, 0.1, 500.0)
         glMatrixMode(GL_MODELVIEW)
 
     def keyPressEvent(self, e):
@@ -418,16 +533,11 @@ class OpenGLWidget(QGLWidget):
             
             self.c.rightChangeIndex.emit()
 
- 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     #storage
     storage = GlobalStorage()
-
-    win = MainWindow(storage=storage)
-    win.show()
-    sys.exit(app.exec_())
 
     print('HELP TEXT:')
     print('\n ----------------------------- \n')
@@ -437,3 +547,9 @@ if __name__ == "__main__":
     print ('t : toggle to view predicted model and target model')
     print ('Left and Right Key : view next model\'s voxel representation')
     print('\n ----------------------------- \n')
+
+    win = MainWindow(storage=storage)
+    win.show()
+    sys.exit(app.exec_())
+
+
