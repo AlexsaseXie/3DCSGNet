@@ -10,6 +10,7 @@ from OpenGL.GLU import *
 from src.display.glm import glm
 from src.display import transform
 from src.projection.find_points import *
+from src.projection.projection import *
 
 import deepdish as dd
 from src.Utils.train_utils import voxels_from_expressions
@@ -42,6 +43,15 @@ def parse(expression):
             pass
     return program
 
+def img2pixmap(image):
+    Y, X = image.shape[:2]
+    _bgra = np.zeros((Y, X, 1), dtype=np.uint8, order='C')
+    _bgra[..., 0] = image[...,0]
+    #_bgra[..., 1] = image[...,0]
+    #_bgra[..., 2] = image[...,0]
+    qimage = QImage(_bgra.data, X, Y, QImage.Format_Indexed8)
+    pixmap = QPixmap.fromImage(qimage)
+    return pixmap
 
 class GlobalStorage:
     def __init__(self, file_path=None, mode=None):
@@ -49,7 +59,7 @@ class GlobalStorage:
         self.up = glm.vec3(0,1,0)
         self.center = glm.vec3(32,32,32)
         self.current_index = 0
-        self.is_target = False
+        self.is_target = True
         if (file_path == None):
             self.file_path = 'trained_models/results/given-model.pth'
         else:
@@ -78,6 +88,9 @@ class GlobalStorage:
         self.target_str = ""
         self.pred_str = ""
 
+        self.pixmap = None
+        self.target_pixmap = None
+
 class Communicate(QObject):
 
     rightChangeIndex = pyqtSignal()
@@ -96,9 +109,9 @@ class MainWindow(QMainWindow):
 	#窗口基础属性
     def basic(self):
         #设置标题，大小，图标
-        self.setWindowTitle("GT")
+        self.setWindowTitle("CSGNet Viewer")
         self.resize(1400,650)
-        self.setWindowIcon(QIcon("./image/Gt.png"))
+        self.setWindowIcon(QIcon("./image/icon.png"))
         #居中显示
         screen = QDesktopWidget().geometry()
         self_size = self.geometry()
@@ -132,6 +145,13 @@ class MainWindow(QMainWindow):
         self.left.predEdit.setText(str(self.storage.pred_str))
         self.left.targetEdit.setText(str(self.storage.target_str))
 
+        # update projection
+        tmp_pixmap = img2pixmap(self.storage.pixmap)
+        self.left.imgLabel.setPixmap(tmp_pixmap)
+
+        tmp_pixmap = img2pixmap(self.storage.target_pixmap)
+        self.left.targetImgLabel.setPixmap(tmp_pixmap)
+
         self.right.reset()
         self.right.updateGL()
 
@@ -142,6 +162,13 @@ class MainWindow(QMainWindow):
 
         self.left.predEdit.setText(str(self.storage.pred_str))
         self.left.targetEdit.setText(str(self.storage.target_str))
+
+        # update projection
+        tmp_pixmap = img2pixmap(self.storage.pixmap)
+        self.left.imgLabel.setPixmap(tmp_pixmap)
+
+        tmp_pixmap = img2pixmap(self.storage.target_pixmap)
+        self.left.targetImgLabel.setPixmap(tmp_pixmap)
 
         self.right.reset()
         self.right.updateGL()
@@ -193,8 +220,8 @@ class LeftWidget(QWidget):
         self.predTitle = QLabel('predict')
         self.predEdit = QLabel(str(self.storage.pred_str))
 
-        grid.addWidget(self.targetTitle, 4 ,0)
-        grid.addWidget(self.targetEdit, 4 , 1)
+        grid.addWidget(self.targetTitle, 4, 0)
+        grid.addWidget(self.targetEdit, 4, 1)
         grid.addWidget(self.predTitle, 5, 0)
         grid.addWidget(self.predEdit, 5, 1)
 
@@ -202,6 +229,19 @@ class LeftWidget(QWidget):
         grid.addWidget(self.indexTitle,6, 0)
         grid.addWidget(self.indexEdit,6, 1)
         grid.addWidget(self.indexButton,6, 2)
+
+        #insert projection
+        self.imgLabel = QLabel('img')
+        self.imgLabel.setFixedHeight(128)
+        self.imgLabel.setFixedWidth(128)
+
+        grid.addWidget(self.imgLabel, 5, 2)
+
+        self.targetImgLabel = QLabel('target_img')
+        self.targetImgLabel.setFixedHeight(128)
+        self.targetImgLabel.setFixedWidth(128)
+
+        grid.addWidget(self.targetImgLabel, 4, 2)
 
 
         self.setLayout(grid)
@@ -224,9 +264,6 @@ class OpenGLWidget(QGLWidget):
         target_expression = self.storage.target_expressions[self.storage.current_index]
 
         voxel = voxels_from_expressions([expression, target_expression], self.storage.primitives, max_len=7)
-
-        self.storage.img_points = border_find_points_simple(voxel[0])
-        self.storage.target_img_points = border_find_points_simple(voxel[1])
 
         self.storage.img_planes = border_find_planes(voxel[0])
         self.storage.target_img_planes = border_find_planes(voxel[1])
@@ -266,6 +303,29 @@ class OpenGLWidget(QGLWidget):
         if (count >= 50):
             self.storage.target_str = self.storage.target_str[0:50] + '\n' + self.storage.target_str[50:]
 
+        # load projection
+        axis = glm.vec3(1,1,1)
+        transfer_matrix = axis_view_matrix(axis=axis)
+        center = np.dot( transfer_matrix,np.array([32,32,32],dtype=float) )
+
+        #pred
+        point_list = axis_view_place_points(voxel[0], transfer_matrix = transfer_matrix)
+
+        img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
+
+        img_mask = img * 255
+        self.storage.pixmap = np.array(img_mask,dtype=int)
+        self.storage.pixmap.resize((self.storage.pixmap.shape[0], self.storage.pixmap.shape[1] , 1))
+
+        #target
+        point_list = axis_view_place_points(voxel[1], transfer_matrix = transfer_matrix)
+
+        img = z_parrallel_projection_point_simple(point_list,origin_w=128,origin_h=128, origin_z=128, w=128, h=128, center_x=center[0], center_y=center[1])
+
+        img_mask = img * 255
+        self.storage.target_pixmap = np.array(img_mask,dtype=int)
+        self.storage.target_pixmap.resize((self.storage.target_pixmap.shape[0], self.storage.target_pixmap.shape[1] , 1))
+
         print('loading fish!')
 
     def reset(self):
@@ -281,7 +341,7 @@ class OpenGLWidget(QGLWidget):
         self.storage.center.y = 32
         self.storage.center.z = 32
 
-        self.storage.is_target = False
+        self.storage.is_target = True
 
         self.c.updateParams.emit()
 
@@ -523,7 +583,7 @@ class OpenGLWidget(QGLWidget):
             self.reset()
             self.updateGL()
         if e.key() == QtCore.Qt.Key_T:
-            self.storage.is_target = ~ self.storage.is_target
+            self.storage.is_target = not self.storage.is_target
             self.updateGL()
 
 
