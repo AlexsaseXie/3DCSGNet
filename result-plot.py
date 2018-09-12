@@ -5,12 +5,23 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib 
 
+import sys 
 
-file_path = 'trained_models/results/given-model.pth'
+if (len(sys.argv) <= 1):
+    file_path = 'trained_models/results/2D-transfer-80epoch-2.pth'
+    m_path = ['/beam_10_pred.txt', '/beam_10_target.txt']
+else:
+    file_path = sys.argv[1]
+    if (sys.argv[2] == 'test'):
+        m_path = ['/pred.txt', '/target.txt']
+    elif (sys.argv[2] == 'beam'):
+        m_path = ['/beam_10_pred.txt', '/beam_10_target.txt']
+    else: 
+        m_path = ['/beam_10_pred-M.txt', '/beam_10_target-M.txt']
 
-with open(file_path + '/beam_10_pred.txt') as data_file:
+with open(file_path + m_path[0]) as data_file:
     expressions = data_file.readlines()
-with open(file_path + '/beam_10_target.txt') as target_data_file:
+with open(file_path + m_path[1]) as target_data_file:
     target_expressions = target_data_file.readlines()
 
 
@@ -36,8 +47,11 @@ for i in range(result_count):
 
     ious[i] = iou
 
+    if (i % 100 == 0):
+        print(i, ' finished!')
 
-plt.hist(ious, bins=40, normed=0, facecolor="blue", edgecolor="black", alpha=0.7)
+
+plt.hist(ious, bins=40, normed=1, facecolor="blue", edgecolor="black", alpha=0.7)
 plt.show()
 
 

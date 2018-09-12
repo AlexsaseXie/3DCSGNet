@@ -44,17 +44,28 @@ def parse(expression):
 
 
 class GlobalStorage:
-    def __init__(self):
+    def __init__(self, file_path=None, mode=None):
         self.eye = glm.vec3(0,0,0)
         self.up = glm.vec3(0,1,0)
         self.center = glm.vec3(32,32,32)
         self.current_index = 0
         self.is_target = False
-        self.file_path = 'trained_models/results/given-model.pth'
+        if (file_path == None):
+            self.file_path = 'trained_models/results/given-model.pth'
+        else:
+            self.file_path = file_path
 
-        with open(self.file_path + '/beam_10_pred.txt') as data_file:
+
+        if (mode == 'test'):
+            m_path = ['/pred.txt', '/target.txt']
+        elif (mode == 'beam' or mode == None):
+            m_path = ['/beam_10_pred.txt', '/beam_10_target.txt']
+        else:
+            m_path = ['/beam_10_pred-M.txt', '/beam_10_target-M.txt']
+
+        with open(self.file_path + m_path[0]) as data_file:
             self.expressions = data_file.readlines()
-        with open(self.file_path + '/beam_10_target.txt') as target_data_file:
+        with open(self.file_path + m_path[1]) as target_data_file:
             self.target_expressions = target_data_file.readlines()
 
         self.primitives = dd.io.load("data/primitives.h5")
@@ -230,7 +241,7 @@ class OpenGLWidget(QGLWidget):
             if (sentence['type'] == 'op'):
                 a = stack.pop()
                 b = stack.pop()
-                c = '( ' + a + ' ' + sentence['value'] + ' ' + b + ' )'
+                c = '( ' + b + ' ' + sentence['value'] + ' ' + a + ' )'
                 stack.append(c)
             else:
                 stack.append(sentence['value'])
@@ -245,7 +256,7 @@ class OpenGLWidget(QGLWidget):
             if (sentence['type'] == 'op'):
                 a = stack.pop()
                 b = stack.pop()
-                c = '( ' + a + ' ' + sentence['value'] + ' ' + b + ' )'
+                c = '( ' + b + ' ' + sentence['value'] + ' ' + a + ' )'
                 stack.append(c)
             else:
                 stack.append(sentence['value'])
@@ -536,8 +547,15 @@ class OpenGLWidget(QGLWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
+    print(sys.argv)
+
+    if (len(sys.argv) > 1):
+        storage = GlobalStorage(sys.argv[1], sys.argv[2])
+    else:
+        storage = GlobalStorage()
+
     #storage
-    storage = GlobalStorage()
+    
 
     print('HELP TEXT:')
     print('\n ----------------------------- \n')
