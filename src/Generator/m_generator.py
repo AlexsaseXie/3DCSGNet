@@ -152,17 +152,17 @@ class M_Generator:
 
         image_path = 'data/2D/'
 
-        if final_canvas:
-            # We will load all the final canvases from the disk.
-            path = image_path + str(program_len) + '/'
-            Stack = np.zeros((1, num_train_images, 1, 128, 128),
-                             dtype=float)
-            for i in range(num_train_images):
-                p = path + "{}.jpg".format(i)
-                img = cv2.imread(p,0)
-                img = np.array(img,dtype = float)
-                img = img / 255
-                Stack[0, i, 0, :, :] = img
+        #if final_canvas:
+        #    # We will load all the final canvases from the disk.
+        #    path = image_path + str(program_len) + '/'
+        #    Stack = np.zeros((1, num_train_images, 1, 128, 128),
+        #                     dtype=float)
+        #    for i in range(num_train_images):
+        #        p = path + "{}.jpg".format(i)
+        #        img = cv2.imread(p,0)
+        #        img = np.array(img,dtype = float)
+        #        img = img / 255
+        #        Stack[0, i, 0, :, :] = img
 
         while True:
             # Random things to select random indices
@@ -210,8 +210,18 @@ class M_Generator:
                     stacks = np.stack(stacks, 1).astype(dtype=np.float32)
                 else:
                     # Only target image is required
-                    stacks = Stack[0:1, image_ids, 0:1, :, :].astype(
-                        dtype=np.float32)
+                    stacks = np.zeros((1, batch_size, 1, 128, 128),
+                             dtype=np.float32)
+                    path = image_path + str(program_len) + '/'
+                    for i, image_id in enumerate(image_ids):
+                        p = path + "{}.jpg".format(image_id)
+                        img = cv2.imread(p,0)
+                        img = np.array(img,dtype = float)
+                        img = img / 255
+                        stacks[0, i, 0, :, :] = img
+
+                    # stacks = Stack[0:1, image_ids, 0:1, :, :].astype(
+                    #    dtype=np.float32)
                 for index, value in enumerate(image_ids):
                     # Get the current program
                     exp = self.programs[program_len][value]

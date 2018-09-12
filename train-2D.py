@@ -39,16 +39,16 @@ configure("log/tensorboard/{}".format(model_name), flush_secs=5)
 callback = Callbacks(config.batch_size, "log/db/{}".format(model_name))
 callback.add_element(["train_loss", "test_loss", "train_mse", "test_mse"])
 
-data_labels_paths = {3: "data/one_op/expressions.txt" }
-                     #5: "data/two_ops/expressions.txt",
-                     #7: "data/three_ops/expressions.txt"}
+data_labels_paths = {3: "data/one_op/expressions.txt",
+                     5: "data/two_ops/expressions.txt",
+                     7: "data/three_ops/expressions.txt"}
 
 proportion = config.proportion  # proportion is in percentage. vary from [1, 100].
 
 # First is training size and second is validation size per program length
-dataset_sizes = {3: [proportion * 1000, proportion * 250] }
-                 #5: [proportion * 2000, proportion * 500],
-                 #7: [proportion * 4000, proportion * 100]}
+dataset_sizes = {3: [proportion * 1000, proportion * 250],
+                 5: [proportion * 2000, proportion * 500],
+                 7: [proportion * 4000, proportion * 100]}
 
 config.train_size = sum(dataset_sizes[k][0] for k in dataset_sizes.keys())
 config.test_size = sum(dataset_sizes[k][1] for k in dataset_sizes.keys())
@@ -77,7 +77,14 @@ if torch.cuda.device_count() > 1:
 imitate_net.cuda()
 
 if config.preload_model:
-    imitate_net.load_state_dict(torch.load(config.pretrain_modelpath))
+    weights = torch.load(config.pretrain_modelpath)
+    new_weights = {}
+    for k in weights.keys():
+        if k.startswith("module"):
+            new_weights[k[7:]] = weights[k]
+    imitate_net.load_state_dict(new_weights)
+
+    #imitate_net.load_state_dict(torch.load(config.pretrain_modelpath))
 
 for param in imitate_net.parameters():
     param.requires_grad = True

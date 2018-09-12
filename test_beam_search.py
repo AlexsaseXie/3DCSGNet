@@ -23,9 +23,9 @@ print(config.config)
 data_labels_paths = {3: "data/one_op/expressions.txt",
                      5: "data/two_ops/expressions.txt",
                      7: "data/three_ops/expressions.txt"}
-dataset_sizes = {3: [110000, 1000],
-                 5: [220000, 2000],
-                 7: [440000, 4000]}
+dataset_sizes = {3: [110000, 20000],
+                 5: [220000, 40000],
+                 7: [440000, 80000]}
 
 test_gen_objs = {}
 types_prog = len(dataset_sizes.keys())
