@@ -8,7 +8,7 @@ import matplotlib
 import sys 
 
 if (len(sys.argv) <= 1):
-    file_path = 'trained_models/results/2D-transfer-80epoch-2.pth'
+    file_path = 'trained_models/results/trained_models/2D-transfer-100epoch-2.pth'
     m_path = ['/beam_10_pred.txt', '/beam_10_target.txt']
 else:
     file_path = sys.argv[1]
@@ -57,7 +57,14 @@ plt.show()
 
 #output the index of bad preds
 
-f = open(file_path + "/bad_result.txt", "w")
+if (m_path[0] == '/pred.txt'):
+    temp = "test_"
+elif (m_path[0] == '/beam_10_pred.txt'):
+    temp = "beam_"
+else:
+    temp = "beam-M_"
+
+f = open(file_path + "/"+ temp + "bad_result.txt", "w")
 
 f.write('iou < 0.6\n')
 
